@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -67,5 +69,30 @@ public class SubmissionService {
                 .build();
 
         return submissionRepository.save(submission);
+    }
+
+    public Optional<Submission> fetchNextPending() {
+        return submissionRepository.findByStatus(SubmissionStatus.PENDING)
+                .stream()
+                .sorted(Comparator.comparing(Submission::getCreatedAt))
+                .findFirst();
+    }
+
+    public Submission markAsProcessing(Submission s) {
+        s.setStatus(SubmissionStatus.PROCESSING);
+        s.setUpdatedAt(Instant.now());
+        return submissionRepository.save(s);
+    }
+
+    public Submission updateSubmissionResult(String id, SubmissionStatus status, Double score, String errorMessage) {
+        Submission s = submissionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+
+        s.setStatus(status);
+        s.setScore(score);
+        s.setErrorMessage(errorMessage);
+        s.setUpdatedAt(Instant.now());
+
+        return submissionRepository.save(s);
     }
 }
