@@ -55,6 +55,20 @@ dont forget to create .venv, .env
 </html>
 
 ====================
+// Файл: frontend/tailwind.config.js
+====================
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+    content: [
+        './index.html',
+        './src/**/*.{js,ts,jsx,tsx}',
+    ],
+    plugins: [
+        require('tailwindcss-animate'),
+    ],
+}
+====================
 // Файл: frontend/tsconfig.app.json
 ====================
 
@@ -83,6 +97,13 @@ dont forget to create .venv, .env
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": ["src"]
 }
@@ -181,6 +202,8 @@ export default defineConfig([
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-slot": "^1.2.4",
     "@tailwindcss/vite": "^4.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -288,53 +311,120 @@ export default defineConfig([
 // Файл: frontend/vite.config.ts
 ====================
 
-import { defineConfig } from 'vite'
+import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-      react(),
-      tailwindcss()
-  ],
+    plugins: [
+        react(),
+        tailwindcss()
+    ],
+    resolve: {
+        alias: {
+            "@": path.resolve(__dirname, "./src"),
+        },
+    },
 })
 
 ====================
 // Файл: frontend/src/App.tsx
 ====================
 
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { ArrowRight, Search, AlertTriangle } from "lucide-react"
+import { ThemeToggle } from "./components/theme-toggle"
+
+// Мокуємо дані для Challenges
+const challenges = [
+  {
+    title: "Predictive Maintenance Analysis",
+    description: "Analyze sensor data to predict equipment failure. The primary evaluation metric is ROC-AUC.",
+    category: "DATA MODELING"
+  },
+  {
+    title: "Customer Churn Prediction",
+    description: "Build a model to identify customers likely to churn. The goal is to maximize the F1 Score.",
+    category: "CLASSIFICATION"
+  },
+  {
+    title: "Global Stock Market Forecasting",
+    description: "Develop a time-series model to predict stock prices using historical data. Evaluation is based on RMSE.",
+    category: "FINANCIAL ANALYSIS"
+  },
+];
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+    <div className="min-h-screen w-full bg-background text-foreground">
+
+      <header className="flex h-16 items-center justify-between border-b px-8">
+        <div className="flex items-center gap-8">
+          <h1 className="text-lg font-bold tracking-wider text-foreground/80">
+            GS HACKATHON
+          </h1>
+          <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/60">
+            <a href="#" className="transition-colors hover:text-foreground">Challenges</a>
+            <a href="#" className="transition-colors hover:text-foreground">Leaderboard</a>
+            <a href="#" className="transition-colors hover:text-foreground">Docs</a>
+          </nav>
+        </div>
+        <div className="flex items-center gap-4">
+          <Search className="h-5 w-5 text-foreground/60" />
+          <Button variant="outline">
+            Team Alpha
+          </Button>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <div className="flex items-center justify-center gap-3 bg-secondary p-2.5 text-sm text-secondary-foreground">
+        <AlertTriangle className="h-5 w-5" />
         <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
+          <span className="font-bold">NOTICE:</span> Submissions are final. Please review your solution carefully.
         </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+
+      <main className="mx-auto max-w-7xl p-8 md:p-12">
+        <section className="text-left mb-16">
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
+            Continuous engagement.
+          </h2>
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground/80 mb-6">
+            Exceptional results.
+          </h2>
+        </section>
+
+        <section className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {challenges.map((challenge) => (
+            <Card key={challenge.title} className="flex flex-col border-none shadow-none bg-card rounded-lg transition-transform duration-300 hover:-translate-y-1">
+              <CardHeader>
+                <CardDescription className="font-semibold text-primary">{challenge.category}</CardDescription>
+                <CardTitle className="text-2xl tracking-tight">{challenge.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <p className="text-muted-foreground">{challenge.description}</p>
+              </CardContent>
+              <div className="p-6 pt-0">
+                <Button variant="ghost" className="p-0 text-primary transition-all hover:bg-transparent hover:underline hover:translate-x-1">
+                  View Challenge
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </section>
+      </main>
+    </div>
   )
 }
 
@@ -346,256 +436,738 @@ export default App
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
 import App from './App.tsx'
+import { ThemeProvider } from './components/theme-provider.tsx'
+
+import './index.css'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+    <StrictMode>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <App />
+        </ThemeProvider>
+    </StrictMode>,
 )
 
 ====================
 // Файл: frontend/src/App.css
 ====================
 
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@custom-variant dark (&:is(.dark *));
-
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
-
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-}
-
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+    /* Визначення CSS змінних для тем */
+    :root {
+        /* GS Light Theme (Default) */
+        --background: 210 40% 100%;
+        --foreground: 222.2 47.4% 11.2%;
+        --card: 210 40% 100%;
+        --card-foreground: 222.2 47.4% 11.2%;
+        --popover: 210 40% 100%;
+        --popover-foreground: 222.2 47.4% 11.2%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 217 91% 60%;
+        --radius: 0.3rem;
+    }
+
+    .dark {
+        /* GS Dark Theme */
+        --background: 224 71% 4%;
+        --foreground: 210 40% 98%;
+        --card: 224 71% 6%;
+        --card-foreground: 210 40% 98%;
+        --popover: 224 71% 4%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 224 39% 12%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 224 39% 12%;
+        --muted-foreground: 215 20% 65%;
+        --accent: 224 39% 12%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 224 39% 12%;
+        --input: 224 39% 12%;
+        --ring: 217 91% 60%;
+    }
+
+    /* Застосування базових стилів до елементів */
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
 }
 
 ====================
 // Файл: frontend/src/index.css
 ====================
 
+/*
+  Імпортуємо Tailwind. Це і є "двигун".
+  Цей запис замінює @tailwind base/components/utilities.
+*/
 @import "tailwindcss";
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/*
+  @theme — це ключова директива Tailwind v4.
+  Тут ми визначаємо всі наші кастомні змінні.
+  Tailwind АВТОМАТИЧНО створить з них класи (bg-background, text-foreground, border-border, etc.).
+*/
+@theme {
+    --radius: 0.3rem;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+    /* --- Light Theme (дефолтні змінні) --- */
+    --color-background: oklch(1 0 0);
+    --color-foreground: oklch(0.25 0.02 240);
+    --color-card: oklch(1 0 0);
+    --color-card-foreground: oklch(0.25 0.02 240);
+    --color-popover: oklch(1 0 0);
+    --color-popover-foreground: oklch(0.25 0.02 240);
+    --color-primary: oklch(0.65 0.08 250);
+    --color-primary-foreground: oklch(1 0 0);
+    --color-secondary: oklch(0.97 0.01 240);
+    --color-secondary-foreground: oklch(0.25 0.02 240);
+    --color-muted: oklch(0.97 0.01 240);
+    --color-muted-foreground: oklch(0.5 0.03 240);
+    --color-accent: oklch(0.97 0.01 240);
+    --color-accent-foreground: oklch(0.25 0.02 240);
+    --color-destructive: oklch(0.55 0.2 25);
+    --color-destructive-foreground: oklch(1 0 0);
+    --color-border: oklch(0.92 0.01 240);
+    --color-input: oklch(0.92 0.01 240);
+    --color-ring: oklch(0.65 0.08 250);
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+    /* --- Dark Theme (змінні всередині селектора .dark) --- */
+    /*
+      &:is(.dark *) - це сучасний синтаксис, який каже:
+      "якщо у будь-якого батьківського елемента є клас .dark"
+    */
+    &:is(.dark *) {
+        --color-background: oklch(0.1 0.02 240);
+        --color-foreground: oklch(0.98 0.01 240);
+        --color-card: oklch(0.15 0.02 240);
+        --color-card-foreground: oklch(0.98 0.01 240);
+        --color-popover: oklch(0.1 0.02 240);
+        --color-popover-foreground: oklch(0.98 0.01 240);
+        --color-primary: oklch(0.65 0.08 250);
+        --color-primary-foreground: oklch(1 0 0);
+        --color-secondary: oklch(0.15 0.02 240);
+        --color-secondary-foreground: oklch(0.98 0.01 240);
+        --color-muted: oklch(0.15 0.02 240);
+        --color-muted-foreground: oklch(0.6 0.03 240);
+        --color-accent: oklch(0.15 0.02 240);
+        --accent-foreground: oklch(0.98 0.01 240);
+        --color-destructive: oklch(0.55 0.2 25);
+        --color-destructive-foreground: oklch(0.98 0.01 240);
+        --color-border: oklch(0.2 0.02 240);
+        --color-input: oklch(0.2 0.02 240);
+        --color-ring: oklch(0.65 0.08 250);
+    }
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/*
+  Тепер ми можемо безпечно використовувати @apply,
+  бо Tailwind v4 вже створив класи з наших змінних.
+*/
+@layer base {
+    body {
+        @apply bg-background text-foreground;
+    }
+    * {
+        @apply border-border;
+    }
+}
+
+====================
+// Файл: frontend/src/components/theme-provider.tsx
+====================
+
+import { createContext, useContext, useEffect, useState } from "react"
+
+type Theme = "dark" | "light" | "system"
+
+type ThemeProviderProps = {
+    children: React.ReactNode
+    defaultTheme?: Theme
+    storageKey?: string
+}
+
+type ThemeProviderState = {
+    theme: Theme
+    setTheme: (theme: Theme) => void
+}
+
+const initialState: ThemeProviderState = {
+    theme: "system",
+    setTheme: () => null,
+}
+
+const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
+
+export function ThemeProvider({
+                                  children,
+                                  defaultTheme = "system",
+                                  storageKey = "vite-ui-theme",
+                                  ...props
+                              }: ThemeProviderProps) {
+    const [theme, setTheme] = useState<Theme>(
+        () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    )
+
+    useEffect(() => {
+        const root = window.document.documentElement
+        root.classList.remove("light", "dark")
+
+        if (theme === "system") {
+            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+                .matches
+                ? "dark"
+                : "light"
+
+            root.classList.add(systemTheme)
+            return
+        }
+
+        root.classList.add(theme)
+    }, [theme])
+
+    const value = {
+        theme,
+        setTheme: (theme: Theme) => {
+            localStorage.setItem(storageKey, theme)
+            setTheme(theme)
+        },
+    }
+
+    return (
+        <ThemeProviderContext.Provider {...props} value={value}>
+            {children}
+        </ThemeProviderContext.Provider>
+    )
+}
+
+====================
+// Файл: frontend/src/components/theme-toggle.tsx
+====================
+
+import { Moon, Sun } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useTheme } from "@/components/theme-provider"
+
+export function ThemeToggle() {
+    const { setTheme } = useTheme()
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="border-border/50 text-foreground/80">
+                    <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                    <span className="sr-only">Toggle theme</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                    Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                    System
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+====================
+// Файл: frontend/src/components/ui/card.tsx
+====================
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+const Card = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div
+        ref={ref}
+        className={cn(
+            "rounded-lg border bg-card text-card-foreground shadow-sm",
+            className
+        )}
+        {...props}
+    />
+))
+Card.displayName = "Card"
+
+const CardHeader = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div
+        ref={ref}
+        className={cn("flex flex-col space-y-1.5 p-6", className)}
+        {...props}
+    />
+))
+CardHeader.displayName = "CardHeader"
+
+const CardTitle = React.forwardRef<
+    HTMLParagraphElement,
+    React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+    <h3
+        ref={ref}
+        className={cn(
+            "text-2xl font-semibold leading-none tracking-tight",
+            className
+        )}
+        {...props}
+    />
+))
+CardTitle.displayName = "CardTitle"
+
+const CardDescription = React.forwardRef<
+    HTMLParagraphElement,
+    React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+    <p
+        ref={ref}
+        className={cn("text-sm text-muted-foreground", className)}
+        {...props}
+    />
+))
+CardDescription.displayName = "CardDescription"
+
+const CardContent = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
+
+const CardFooter = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div
+        ref={ref}
+        className={cn("flex items-center p-6 pt-0", className)}
+        {...props}
+    />
+))
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+
+====================
+// Файл: frontend/src/components/ui/table.tsx
+====================
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+const Table = React.forwardRef<
+    HTMLTableElement,
+    React.HTMLAttributes<HTMLTableElement>
+>(({ className, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+        <table
+            ref={ref}
+            className={cn("w-full caption-bottom text-sm", className)}
+            {...props}
+        />
+    </div>
+))
+Table.displayName = "Table"
+
+const TableHeader = React.forwardRef<
+    HTMLTableSectionElement,
+    React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+    <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+))
+TableHeader.displayName = "TableHeader"
+
+const TableBody = React.forwardRef<
+    HTMLTableSectionElement,
+    React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+    <tbody
+        ref={ref}
+        className={cn("[&_tr:last-child]:border-0", className)}
+        {...props}
+    />
+))
+TableBody.displayName = "TableBody"
+
+const TableFooter = React.forwardRef<
+    HTMLTableSectionElement,
+    React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+    <tfoot
+        ref={ref}
+        className={cn(
+            "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+            className
+        )}
+        {...props}
+    />
+))
+TableFooter.displayName = "TableFooter"
+
+const TableRow = React.forwardRef<
+    HTMLTableRowElement,
+    React.HTMLAttributes<HTMLTableRowElement>
+>(({ className, ...props }, ref) => (
+    <tr
+        ref={ref}
+        className={cn(
+            "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+            className
+        )}
+        {...props}
+    />
+))
+TableRow.displayName = "TableRow"
+
+const TableHead = React.forwardRef<
+    HTMLTableCellElement,
+    React.ThHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => (
+    <th
+        ref={ref}
+        className={cn(
+            "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+            className
+        )}
+        {...props}
+    />
+))
+TableHead.displayName = "TableHead"
+
+const TableCell = React.forwardRef<
+    HTMLTableCellElement,
+    React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => (
+    <td
+        ref={ref}
+        className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+        {...props}
+    />
+))
+TableCell.displayName = "TableCell"
+
+const TableCaption = React.forwardRef<
+    HTMLTableCaptionElement,
+    React.HTMLAttributes<HTMLTableCaptionElement>
+>(({ className, ...props }, ref) => (
+    <caption
+        ref={ref}
+        className={cn("mt-4 text-sm text-muted-foreground", className)}
+        {...props}
+    />
+))
+TableCaption.displayName = "TableCaption"
+
+export {
+    Table,
+    TableHeader,
+    TableBody,
+    TableFooter,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableCaption,
+}
+====================
+// Файл: frontend/src/components/ui/button.tsx
+====================
+
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    {
+        variants: {
+            variant: {
+                default: "bg-primary text-primary-foreground hover:bg-primary/90",
+                destructive:
+                    "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                outline:
+                    "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                secondary:
+                    "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                ghost: "hover:bg-accent hover:text-accent-foreground",
+                link: "text-primary underline-offset-4 hover:underline",
+            },
+            size: {
+                default: "h-10 px-4 py-2",
+                sm: "h-9 rounded-md px-3",
+                lg: "h-11 rounded-md px-8",
+                icon: "h-10 w-10",
+            },
+        },
+        defaultVariants: {
+            variant: "default",
+            size: "default",
+        },
+    }
+)
+
+export interface ButtonProps
+    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+        VariantProps<typeof buttonVariants> {
+    asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+    ({ className, variant, size, asChild = false, ...props }, ref) => {
+        const Comp = asChild ? Slot : "button"
+        return (
+            <Comp
+                className={cn(buttonVariants({ variant, size, className }))}
+                ref={ref}
+                {...props}
+            />
+        )
+    }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+====================
+// Файл: frontend/src/components/ui/dropdown-menu.tsx
+====================
+
+"use client"
+
+import * as React from "react"
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { Check, ChevronRight, Circle } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const DropdownMenu = DropdownMenuPrimitive.Root
+
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
+
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal
+
+const DropdownMenuSub = DropdownMenuPrimitive.Sub
+
+const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
+
+const DropdownMenuSubTrigger = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+    inset?: boolean
+}
+>(({ className, inset, children, ...props }, ref) => (
+    <DropdownMenuPrimitive.SubTrigger
+        ref={ref}
+        className={cn(
+            "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+            inset && "pl-8",
+            className
+        )}
+        {...props}
+    >
+        {children}
+        <ChevronRight className="ml-auto h-4 w-4" />
+    </DropdownMenuPrimitive.SubTrigger>
+))
+DropdownMenuSubTrigger.displayName =
+    DropdownMenuPrimitive.SubTrigger.displayName
+
+const DropdownMenuSubContent = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
+>(({ className, ...props }, ref) => (
+    <DropdownMenuPrimitive.SubContent
+        ref={ref}
+        className={cn(
+            "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            className
+        )}
+        {...props}
+    />
+))
+DropdownMenuSubContent.displayName =
+    DropdownMenuPrimitive.SubContent.displayName
+
+const DropdownMenuContent = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Content>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+    <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+            ref={ref}
+            sideOffset={sideOffset}
+            className={cn(
+                "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                className
+            )}
+            {...props}
+        />
+    </DropdownMenuPrimitive.Portal>
+))
+DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
+
+const DropdownMenuItem = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean
+}
+>(({ className, inset, ...props }, ref) => (
+    <DropdownMenuPrimitive.Item
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            inset && "pl-8",
+            className
+        )}
+        {...props}
+    />
+))
+DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
+
+const DropdownMenuCheckboxItem = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
+>(({ className, children, checked, ...props }, ref) => (
+    <DropdownMenuPrimitive.CheckboxItem
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            className
+        )}
+        checked={checked}
+        {...props}
+    >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Check className="h-4 w-4" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+        {children}
+    </DropdownMenuPrimitive.CheckboxItem>
+))
+DropdownMenuCheckboxItem.displayName =
+    DropdownMenuPrimitive.CheckboxItem.displayName
+
+const DropdownMenuRadioItem = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
+>(({ className, children, ...props }, ref) => (
+    <DropdownMenuPrimitive.RadioItem
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            className
+        )}
+        {...props}
+    >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Circle className="h-2 w-2 fill-current" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+        {children}
+    </DropdownMenuPrimitive.RadioItem>
+))
+DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
+
+const DropdownMenuLabel = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean
+}
+>(({ className, inset, ...props }, ref) => (
+    <DropdownMenuPrimitive.Label
+        ref={ref}
+        className={cn(
+            "px-2 py-1.5 text-sm font-semibold",
+            inset && "pl-8",
+            className
+        )}
+        {...props}
+    />
+))
+DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName
+
+const DropdownMenuSeparator = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+    <DropdownMenuPrimitive.Separator
+        ref={ref}
+        className={cn("-mx-1 my-1 h-px bg-muted", className)}
+        {...props}
+    />
+))
+DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
+
+const DropdownMenuShortcut = ({
+                                  className,
+                                  ...props
+                              }: React.HTMLAttributes<HTMLSpanElement>) => {
+    return (
+        <span
+            className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
+            {...props}
+        />
+    )
+}
+DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
+
+export {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuCheckboxItem,
+    DropdownMenuRadioItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuGroup,
+    DropdownMenuPortal,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuRadioGroup,
 }
 
 ====================
