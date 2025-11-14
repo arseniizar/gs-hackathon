@@ -1,48 +1,50 @@
 package myapp.backendcore.security;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import myapp.backendcore.model.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.security.Key;
 import java.util.Date;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
 
     @Value("${hackathon.jwt.secret}")
-    private String jwtSecret;
+    private String secret;
 
     @Value("${hackathon.jwt.expiration-ms}")
-    private long jwtExpirationMs;
+    private long expirationMs;
 
-    public String generateToken(String userId, String email, Set<String> roles) {
-        Claims claims = Jwts.claims().setSubject(userId);
-        claims.put("email", email);
-        claims.put("roles", roles.stream().collect(Collectors.toList()));
+    private Key signingKey;
 
+    @PostConstruct
+    public void init() {
+        signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    public String generateToken(User user) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + jwtExpirationMs);
+        Date expiry = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
-                .setClaims(claims)
+                .setSubject(user.getId()) // userId
+                .claim("email", user.getEmail())
+                .claim("roles", user.getRoles())
                 .setIssuedAt(now)
                 .setExpiration(expiry)
-                .signWith(SignatureAlgorithm.HS256, jwtSecret)
+                .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException ex) {
-            return false;
-        }
-    }
-
-    public Claims getClaims(String token) {
-        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
+    public Claims extractClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
