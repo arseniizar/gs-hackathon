@@ -1,35 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Link, Outlet } from 'react-router-dom';
+import { ThemeToggle } from './components/theme-toggle';
+import { Button } from './components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+import { ROUTES } from './router/paths';
+import { useAuth } from './contexts/AuthContext';
 
-function App() {
-  const [count, setCount] = useState(0)
+function AppLayout() {
+    const { isAuthenticated, teamName, logout } = useAuth();
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    return (
+        <div className="min-h-screen w-full bg-background text-foreground font-sans">
+            <header className="flex h-16 items-center justify-between border-b px-8 md:px-16">
+                <div className="flex items-center gap-8">
+                    <Link to={ROUTES.HOME} className="text-lg font-bold tracking-wider font-sans">
+                        GS HACKATHON
+                    </Link>
+                    <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/70">
+                        <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
+                        <Link to={ROUTES.LEADERBOARD} className="transition-colors hover:text-foreground">Leaderboard</Link>
+                        <a href="#" className="transition-colors hover:text-foreground">Docs</a>
+                    </nav>
+                </div>
+                <div className="flex items-center gap-2">
+                    {isAuthenticated ? (
+                        <>
+                            <Button variant="ghost">{teamName}</Button>
+                            <Button variant="outline" size="sm" onClick={logout}>Logout</Button>
+                        </>
+                    ) : (
+                        <Button asChild variant="outline" size="sm">
+                            <Link to={ROUTES.LOGIN}>Login</Link>
+                        </Button>
+                    )}
+                    <ThemeToggle />
+                </div>
+            </header>
+
+            <div className="flex items-center justify-center gap-3 border-b bg-secondary p-2.5 text-sm text-secondary-foreground">
+                <AlertTriangle className="h-4 w-4" />
+                <p>
+                    <span className="font-semibold">NOTICE:</span> Submissions are final. Please review your solution carefully.
+                </p>
+            </div>
+
+            <main>
+                <Outlet />
+            </main>
+        </div>
+    );
 }
 
-export default App
+export default AppLayout;
