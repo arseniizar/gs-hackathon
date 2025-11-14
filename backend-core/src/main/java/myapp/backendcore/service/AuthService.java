@@ -41,7 +41,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        return jwtUtil.generateToken(String.valueOf(u.getId()), u.getEmail(), u.getRoles());
+        return jwtUtil.generateToken(u);
     }
 
 }
