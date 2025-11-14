@@ -16,7 +16,7 @@ IGNORE_DIRS = {
 
 IGNORE_FILES = {
     'package-lock.json', 'yarn.lock', '.env',
-    'mvnw', 'mvnw.cmd', 'gradlew', 'gradlew.bat'
+    'mvnw', 'mvnw.cmd', 'gradlew', 'gradlew.bat', '.env.example'
 }
 
 OUTPUT_FILE = 'project_code.txt'
