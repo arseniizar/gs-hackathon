@@ -215,8 +215,11 @@ export default defineConfig([
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@tailwindcss/vite": "^4.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -684,6 +687,89 @@ export const useTheme = () => {
 }
 
 ====================
+// Файл: frontend/src/components/SubmissionDialog.tsx
+====================
+
+import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+interface SubmissionDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    challengeTitle: string;
+}
+
+export function SubmissionDialog({ open, onOpenChange, challengeTitle }: SubmissionDialogProps) {
+    const [file, setFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            setFile(event.target.files[0]);
+            setError(null);
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!file) {
+            setError("Please select a file to submit.");
+            return;
+        }
+
+        setIsUploading(true);
+        setError(null);
+
+        // Імітація завантаження на сервер
+        console.log("Uploading file:", file.name);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        console.log("Upload complete!");
+        setIsUploading(false);
+        onOpenChange(false); // Закриваємо діалог
+        setFile(null); // Скидаємо файл
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Submit to: {challengeTitle}</DialogTitle>
+                    <DialogDescription>
+                        Select your solution file. The submission will be final.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid w-full max-w-sm items-center gap-1.5">
+                        <Label htmlFor="solution-file">Solution File (.csv)</Label>
+                        <Input id="solution-file" type="file" onChange={handleFileChange} accept=".csv" />
+                        {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={!file || isUploading}>
+                        {isUploading ? "Uploading..." : "Submit Solution"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+====================
 // Файл: frontend/src/components/theme-toggle.tsx
 ====================
 
@@ -710,6 +796,75 @@ export function ThemeToggle() {
         </Button>
     )
 }
+
+====================
+// Файл: frontend/src/components/ui/tabs.tsx
+====================
+
+import * as React from "react"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
+
+import { cn } from "@/lib/utils"
+
+function Tabs({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  return (
+    <TabsPrimitive.Root
+      data-slot="tabs"
+      className={cn("flex flex-col gap-2", className)}
+      {...props}
+    />
+  )
+}
+
+function TabsList({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.List>) {
+  return (
+    <TabsPrimitive.List
+      data-slot="tabs-list"
+      className={cn(
+        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TabsTrigger({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+  return (
+    <TabsPrimitive.Trigger
+      data-slot="tabs-trigger"
+      className={cn(
+        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TabsContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+  return (
+    <TabsPrimitive.Content
+      data-slot="tabs-content"
+      className={cn("flex-1 outline-none", className)}
+      {...props}
+    />
+  )
+}
+
+export { Tabs, TabsList, TabsTrigger, TabsContent }
 
 ====================
 // Файл: frontend/src/components/ui/card.tsx
@@ -793,6 +948,232 @@ const CardFooter = React.forwardRef<
 ))
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+
+====================
+// Файл: frontend/src/components/ui/label.tsx
+====================
+
+"use client"
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+
+import { cn } from "@/lib/utils"
+
+function Label({
+  className,
+  ...props
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+  return (
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Label }
+
+====================
+// Файл: frontend/src/components/ui/dialog.tsx
+====================
+
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { XIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+function Dialog({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
+
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
+
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal data-slot="dialog-portal">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+}
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg leading-none font-semibold", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}
+
+====================
+// Файл: frontend/src/components/ui/badge.tsx
+====================
+
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const badgeVariants = cva(
+  "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+        destructive:
+          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline:
+          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+function Badge({
+  className,
+  variant,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot : "span"
+
+  return (
+    <Comp
+      data-slot="badge"
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
+  )
+}
+
+export { Badge, badgeVariants }
 
 ====================
 // Файл: frontend/src/components/ui/table.tsx
@@ -1182,6 +1563,51 @@ export {
 }
 
 ====================
+// Файл: frontend/src/components/ui/input.tsx
+====================
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Input }
+
+====================
+// Файл: frontend/src/components/ui/skeleton.tsx
+====================
+
+import { cn } from "@/lib/utils"
+
+function Skeleton({
+                      className,
+                      ...props
+                  }: React.HTMLAttributes<HTMLDivElement>) {
+    return (
+        <div
+            className={cn("animate-pulse rounded-md bg-muted", className)}
+            {...props}
+        />
+    )
+}
+
+export { Skeleton }
+====================
 // Файл: frontend/src/lib/utils.ts
 ====================
 
@@ -1192,6 +1618,40 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+====================
+// Файл: frontend/src/lib/api.ts
+====================
+
+// src/lib/api.ts
+
+// Імітуємо затримку мережі
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Мокові дані
+const MOCK_CHALLENGE_DETAILS = {
+    id: '1',
+    title: "Predictive Maintenance Analysis",
+    metric: "ROC-AUC",
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Дедлайн через 3 дні
+    description: "The goal of this challenge is to predict equipment failure based on sensor data. Participants will build a binary classification model. The dataset contains anonymized sensor readings and maintenance history for a fleet of industrial machines. Your task is to predict the probability of failure within the next operational cycle.",
+    rules: "Submissions must be a CSV file with two columns: 'id' and 'probability'. The file must contain predictions for all IDs present in test.csv. Maximum 5 submissions per day.",
+    dataAssets: [
+        { name: 'train.csv', size: '24.5 MB' },
+        { name: 'test.csv', size: '8.2 MB' },
+        { name: 'sample_submission.csv', size: '1.1 MB' },
+    ],
+    userSubmissions: [
+        { id: 'sub-001', submittedAt: new Date().toISOString(), status: 'Scored', score: 0.8923 },
+        { id: 'sub-002', submittedAt: new Date().toISOString(), status: 'Processing', score: null },
+        { id: 'sub-003', submittedAt: new Date().toISOString(), status: 'Error', score: null },
+    ],
+};
+
+export const getChallengeDetails = async (challengeId: string) => {
+    console.log(`Fetching details for challenge ${challengeId}...`);
+    await sleep(500); // Імітація завантаження
+    return MOCK_CHALLENGE_DETAILS;
+};
 ====================
 // Файл: frontend/src/pages/RegisterPage.tsx
 ====================
@@ -1306,22 +1766,210 @@ export default ChallengesListPage;
 // Файл: frontend/src/pages/ChallengeDetailsPage.tsx
 ====================
 
-import { useParams } from "react-router-dom";
+import {useEffect, useState} from 'react';
+import {useParams} from 'react-router-dom';
+import {Button} from '@/components/ui/button';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {Badge} from "@/components/ui/badge";
+import {Download, Upload} from 'lucide-react';
+import {SubmissionDialog} from '@/components/SubmissionDialog';
+import {Skeleton} from '@/components/ui/skeleton';
 
-function ChallengeDetailsPage() {
-    const { challengeId } = useParams();
+const MOCK_CHALLENGE_DETAILS = {
+    id: '1',
+    title: "Predictive Maintenance Analysis",
+    metric: "ROC-AUC",
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    description: "The goal of this challenge is to predict equipment failure based on sensor data. Participants will build a binary classification model. The dataset contains anonymized sensor readings and maintenance history for a fleet of industrial machines. Your task is to predict the probability of failure within the next operational cycle.",
+    rules: "Submissions must be a CSV file with two columns: 'id' and 'probability'. The file must contain predictions for all IDs present in test.csv. Maximum 5 submissions per day.",
+    dataAssets: [
+        {name: 'train.csv', size: '24.5 MB'},
+        {name: 'test.csv', size: '8.2 MB'},
+        {name: 'sample_submission.csv', size: '1.1 MB'},
+    ],
+    userSubmissions: [
+        {
+            id: 'sub-001',
+            submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            status: 'Scored',
+            score: 0.8923
+        },
+        {
+            id: 'sub-002',
+            submittedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+            status: 'Processing',
+            score: null
+        },
+        {
+            id: 'sub-003',
+            submittedAt: new Date(Date.now() - 0.5 * 60 * 60 * 1000).toISOString(),
+            status: 'Error',
+            score: null
+        },
+    ],
+};
+type ChallengeDetails = typeof MOCK_CHALLENGE_DETAILS;
 
+function ChallengeDetailsSkeleton() {
     return (
-        <div className="mx-auto max-w-6xl px-8 py-16 md:py-24 text-center">
-            <h1 className="text-5xl font-medium">Challenge Details</h1>
-            <p className="mt-4 text-2xl text-muted-foreground">
-                You are viewing challenge with ID: <span className="text-primary">{challengeId}</span>
-            </p>
+        <div className="mx-auto max-w-6xl px-8 py-12 md:py-16">
+            <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-4">
+                <div className="w-full md:w-3/4">
+                    <Skeleton className="h-16 w-full mb-4"/>
+                    <Skeleton className="h-6 w-1/2"/>
+                </div>
+                <Skeleton className="h-12 w-full md:w-48 rounded-md"/>
+            </div>
+            <div className="border-b">
+                <div className="flex space-x-8">
+                    <Skeleton className="h-10 w-24"/>
+                    <Skeleton className="h-10 w-24"/>
+                    <Skeleton className="h-10 w-32"/>
+                </div>
+            </div>
+            <div className="mt-10 space-y-6">
+                <Skeleton className="h-8 w-48"/>
+                <Skeleton className="h-5 w-full"/>
+                <Skeleton className="h-5 w-4/5"/>
+            </div>
         </div>
     );
 }
 
+function ChallengeDetailsPage() {
+    const {challengeId} = useParams<{ challengeId: string }>();
+    const [challenge, setChallenge] = useState<ChallengeDetails | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    useEffect(() => {
+        const fetchChallenge = async () => {
+            setIsLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setChallenge(MOCK_CHALLENGE_DETAILS);
+            setIsLoading(false);
+        };
+        fetchChallenge();
+    }, [challengeId]);
+
+    if (isLoading) {
+        return <ChallengeDetailsSkeleton/>;
+    }
+
+    if (!challenge) {
+        return <div className="text-center py-24 text-destructive">Failed to load challenge.</div>;
+    }
+
+    const timeRemaining = new Date(challenge.deadline).toLocaleDateString("en-US", {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+
+    return (
+        <>
+            <div className="mx-auto max-w-6xl px-8 py-12 md:py-16">
+                <div className="flex flex-col md:flex-row justify-between items-start mb-16 gap-6">
+                    <div className="w-full md:w-3/4">
+                        <h1 className="text-5xl md:text-6xl font-medium tracking-tighter font-serif">{challenge.title}</h1>
+                        <p className="mt-4 text-base text-muted-foreground">
+                            Metric: <span className="font-semibold text-foreground">{challenge.metric}</span> •
+                            Deadline: <span className="font-semibold text-foreground">{timeRemaining}</span>
+                        </p>
+                    </div>
+                    <Button size="lg" className="w-full md:w-auto flex-shrink-0" onClick={() => setIsDialogOpen(true)}>
+                        <Upload className="mr-2 h-4 w-4"/>
+                        Make Submission
+                    </Button>
+                </div>
+
+                <Tabs defaultValue="overview" className="w-full">
+                    {/* ===== ФІНАЛЬНИЙ СТИЛЬ ТАБІВ, 1 в 1 ЯК У GOLDMAN SACKS ===== */}
+                    <TabsList className="border-b justify-start w-full">
+                        <TabsTrigger
+                            value="overview"
+                            className="pb-3 mr-8 -mb-px font-sans text-base font-medium text-muted-foreground border-b-2 border-transparent data-[state=active]:text-foreground data-[state=active]:border-primary"
+                        >
+                            Overview
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="data"
+                            className="pb-3 mr-8 -mb-px font-sans text-base font-medium text-muted-foreground border-b-2 border-transparent data-[state=active]:text-foreground data-[state=active]:border-primary"
+                        >
+                            Data
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="submissions"
+                            className="pb-3 -mb-px font-sans text-base font-medium text-muted-foreground border-b-2 border-transparent data-[state=active]:text-foreground data-[state=active]:border-primary"
+                        >
+                            My Submissions
+                        </TabsTrigger>
+                    </TabsList>
+                    {/* ===== КІНЕЦЬ СТИЛІВ ===== */}
+
+                    <TabsContent value="overview" className="mt-10 space-y-10">
+                        <div>
+                            <h3 className="text-3xl font-medium mb-4 font-serif">Description</h3>
+                            <p className="max-w-4xl text-lg leading-relaxed text-foreground/80">{challenge.description}</p>
+                        </div>
+                        <div>
+                            <h3 className="text-3xl font-medium mb-4 font-serif">Rules</h3>
+                            <p className="max-w-4xl text-lg leading-relaxed text-foreground/80">{challenge.rules}</p>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="data" className="mt-10">
+                        <div className="border-t">
+                            {challenge.dataAssets.map(asset => (
+                                <div key={asset.name} className="flex justify-between items-center py-4 border-b">
+                                    <div>
+                                        <p className="font-semibold">{asset.name}</p>
+                                        <p className="text-sm text-muted-foreground">{asset.size}</p>
+                                    </div>
+                                    <Button variant="ghost" asChild>
+                                        <a href={`/path/to/${asset.name}`} download
+                                           className="flex items-center text-sm font-semibold text-primary hover:underline">
+                                            Download <Download className="ml-2 h-4 w-4"/>
+                                        </a>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="submissions" className="mt-10">
+                        <div className="border-t">
+                            {challenge.userSubmissions.map(sub => (
+                                <div key={sub.id} className="flex justify-between items-center py-4 border-b">
+                                    <div>
+                                        <p className="font-mono text-sm">{sub.id}</p>
+                                        <p className="text-sm text-muted-foreground">{new Date(sub.submittedAt).toLocaleString()}</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Badge
+                                            variant={sub.status === 'Scored' ? 'default' : sub.status === 'Error' ? 'destructive' : 'secondary'}>
+                                            {sub.status}
+                                        </Badge>
+                                        <p className="text-right font-semibold w-24">{sub.score ? sub.score.toFixed(4) : 'N/A'}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            <SubmissionDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                challengeTitle={challenge.title}
+            />
+        </>
+    );
+}
+
 export default ChallengeDetailsPage;
+
 ====================
 // Файл: frontend/src/pages/NotFoundPage.tsx
 ====================
@@ -2196,3 +2844,4 @@ Good luck and have fun!
 
 стак нашого проекту: реакт, нодж джс, монго, джава спрінг бут;
 стиль сайту як голдмен сакс; уважно дивись, що до чого;
+завжди пиши повний код для компонентів які редагуєш;
