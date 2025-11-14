@@ -1,12 +1,12 @@
 import { Link, Outlet } from 'react-router-dom';
 import { ThemeToggle } from './components/theme-toggle';
 import { Button } from './components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { ROUTES } from './router/paths';
 import { useAuth } from './contexts/AuthContext';
 
 function AppLayout() {
-    const { isAuthenticated, teamName, logout } = useAuth();
+    const { isAuthenticated, teamName, logout, isAdmin } = useAuth();
 
     return (
         <div className="min-h-screen w-full bg-background text-foreground font-sans">
@@ -18,7 +18,12 @@ function AppLayout() {
                     <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/70">
                         <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
                         <Link to={ROUTES.LEADERBOARD} className="transition-colors hover:text-foreground">Leaderboard</Link>
-                        <a href="#" className="transition-colors hover:text-foreground">Docs</a>
+                        {isAdmin && (
+                            <Link to={ROUTES.ADMIN} className="flex items-center gap-1 font-semibold text-primary transition-colors hover:text-foreground">
+                                <ShieldCheck className="h-4 w-4" />
+                                Admin
+                            </Link>
+                        )}
                     </nav>
                 </div>
                 <div className="flex items-center gap-2">

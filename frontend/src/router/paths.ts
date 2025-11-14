@@ -3,6 +3,7 @@ export const ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',
     LEADERBOARD: '/leaderboard',
-    // Для динамічних шляхів створюємо функцію
+    ADMIN: '/admin', // Add the new admin route
+    // For dynamic paths, create a function
     CHALLENGE_DETAILS: (challengeId: string | number) => `/challenges/${challengeId}`,
 };
