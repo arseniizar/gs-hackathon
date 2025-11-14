@@ -41,6 +41,9 @@ public class ChallengeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
 
         // Update only non-null fields
+        if (request.getTitle() != null && request.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Title cannot be blank");
+        }
         if (request.getTitle() != null) {
             existing.setTitle(request.getTitle());
         }

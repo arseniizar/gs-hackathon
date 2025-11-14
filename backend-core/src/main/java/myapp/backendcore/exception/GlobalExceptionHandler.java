@@ -70,6 +70,16 @@ public class GlobalExceptionHandler {
     ) {
         return buildError(HttpStatus.FORBIDDEN, "Access denied", request);
     }
+    // ─────────────────────────────────────────────────────────────
+    // 500 – Illegal argument exception
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
 
     // ─────────────────────────────────────────────────────────────
     // 500 – Generic unexpected error (fallback)
