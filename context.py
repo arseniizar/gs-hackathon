@@ -107,7 +107,8 @@ After the first round, judges will select the top three teams to present live in
 Good luck and have fun!
 
 
-стак нашого проекту: реакт, нодж джс, монго, джава спрінг бут
+стак нашого проекту: реакт, нодж джс, монго, джава спрінг бут;
+стиль сайту як голдмен сакс; уважно дивись, що до чого;
 ''')
 
 
