@@ -20,5 +20,5 @@ public class ChallengeCreateRequest {
     @Size(max = 2000)
     private String description;
 
-    private Optional<ChallengeStatus> status;
+    private Optional<ChallengeStatus> status = Optional.empty(); // Initialize to Optional.empty()
 }

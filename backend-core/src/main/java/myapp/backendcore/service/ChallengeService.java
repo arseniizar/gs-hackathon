@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,20 +21,28 @@ public class ChallengeService {
     private final ChallengeRepository challengeRepository;
 
     public ChallengeResponse create(ChallengeCreateRequest request) {
-        Instant now = Instant.now();
-
-        ChallengeStatus status = request.getStatus().orElse(ChallengeStatus.OPEN);
+        ChallengeStatus status = Optional.ofNullable(request.getStatus())
+                                          .orElse(Optional.of(ChallengeStatus.OPEN))
+                                          .orElse(ChallengeStatus.OPEN);
 
         Challenge challenge = Challenge.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .status(status)
-                .createdAt(now)
-                .updatedAt(now)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
                 .build();
 
-        Challenge saved = challengeRepository.save(challenge);
-        return toResponse(saved);
+        Challenge savedChallenge = challengeRepository.save(challenge);
+
+        return new ChallengeResponse(
+                savedChallenge.getId(),
+                savedChallenge.getTitle(),
+                savedChallenge.getDescription(),
+                savedChallenge.getStatus(),
+                savedChallenge.getCreatedAt(),
+                savedChallenge.getUpdatedAt()
+        );
     }
 
     public ChallengeResponse update(String id, ChallengeUpdateRequest request) {
