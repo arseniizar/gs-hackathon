@@ -1,49 +1,37 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
-import AppLayout from '@/App'; // App.tsx тепер буде нашим лейаутом
+import AppLayout from '@/App';
 import ChallengesListPage from '@/pages/ChallengesListPage';
 import ChallengeDetailsPage from '@/pages/ChallengeDetailsPage';
 import LeaderboardPage from '@/pages/LeaderboardPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import NotFoundPage from '@/pages/NotFoundPage';
+import AdminPage from '@/pages/AdminPage';
 import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute'; // We will create this next
 import { ROUTES } from './paths';
 
 const routes: RouteObject[] = [
     {
         element: <AppLayout />,
         children: [
-            {
-                path: ROUTES.HOME,
-                element: <ChallengesListPage />,
-            },
-            {
-                path: ROUTES.LOGIN,
-                element: <LoginPage />,
-            },
-            {
-                path: ROUTES.REGISTER,
-                element: <RegisterPage />,
-            },
-            // Protected Routes
+            { path: ROUTES.HOME, element: <ChallengesListPage /> },
+            { path: ROUTES.LOGIN, element: <LoginPage /> },
+            { path: ROUTES.REGISTER, element: <RegisterPage /> },
             {
                 element: <ProtectedRoute />,
                 children: [
-                    {
-                        path: ROUTES.LEADERBOARD,
-                        element: <LeaderboardPage />,
-                    },
-                    {
-                        // Використовуємо функцію для створення динамічного шляху
-                        path: ROUTES.CHALLENGE_DETAILS(':challengeId'),
-                        element: <ChallengeDetailsPage />,
-                    },
+                    { path: ROUTES.LEADERBOARD, element: <LeaderboardPage /> },
+                    { path: ROUTES.CHALLENGE_DETAILS(':challengeId'), element: <ChallengeDetailsPage /> },
                 ],
             },
             {
-                path: '*',
-                element: <NotFoundPage />,
+                element: <AdminRoute />, // Protect admin routes
+                children: [
+                    { path: ROUTES.ADMIN, element: <AdminPage /> },
+                ],
             },
+            { path: '*', element: <NotFoundPage /> },
         ],
     },
 ];

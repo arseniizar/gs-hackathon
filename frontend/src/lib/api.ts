@@ -1,30 +1,69 @@
 // src/lib/api.ts
+import axios from 'axios';
 
-// Імітуємо затримку мережі
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// The base URL for our Spring Boot backend.
+// In a real app, this would come from an environment variable.
+const API_URL = 'http://localhost:8080/api';
 
-// Мокові дані
-const MOCK_CHALLENGE_DETAILS = {
-    id: '1',
-    title: "Predictive Maintenance Analysis",
-    metric: "ROC-AUC",
-    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Дедлайн через 3 дні
-    description: "The goal of this challenge is to predict equipment failure based on sensor data. Participants will build a binary classification model. The dataset contains anonymized sensor readings and maintenance history for a fleet of industrial machines. Your task is to predict the probability of failure within the next operational cycle.",
-    rules: "Submissions must be a CSV file with two columns: 'id' and 'probability'. The file must contain predictions for all IDs present in test.csv. Maximum 5 submissions per day.",
-    dataAssets: [
-        { name: 'train.csv', size: '24.5 MB' },
-        { name: 'test.csv', size: '8.2 MB' },
-        { name: 'sample_submission.csv', size: '1.1 MB' },
-    ],
-    userSubmissions: [
-        { id: 'sub-001', submittedAt: new Date().toISOString(), status: 'Scored', score: 0.8923 },
-        { id: 'sub-002', submittedAt: new Date().toISOString(), status: 'Processing', score: null },
-        { id: 'sub-003', submittedAt: new Date().toISOString(), status: 'Error', score: null },
-    ],
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Axios interceptor to add the JWT token to every secure request
+apiClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
+
+// --- AUTHENTICATION ---
+export const loginUser = async (credentials: object) => {
+    const response = await apiClient.post('/auth/login', credentials);
+    return response.data; // Expected: { token, userId }
+};
+
+export const registerUser = async (userData: object) => {
+    const response = await apiClient.post('/auth/register', userData);
+    return response.data;
+};
+
+
+// --- PUBLIC CHALLENGES ---
+export const getChallenges = async () => {
+    const response = await apiClient.get('/challenges');
+    return response.data;
 };
 
 export const getChallengeDetails = async (challengeId: string) => {
-    console.log(`Fetching details for challenge ${challengeId}...`);
-    await sleep(500); // Імітація завантаження
-    return MOCK_CHALLENGE_DETAILS;
+    const response = await apiClient.get(`/challenges/${challengeId}`);
+    return response.data;
+};
+
+
+// --- ADMIN: CHALLENGE MANAGEMENT ---
+export const adminGetAllChallenges = async () => {
+    const response = await apiClient.get('/admin/challenges');
+    return response.data;
+};
+
+export const adminCreateChallenge = async (challengeData: object) => {
+    const response = await apiClient.post('/admin/challenges', challengeData);
+    return response.data;
+};
+
+export const adminUpdateChallenge = async (id: string, challengeData: object) => {
+    const response = await apiClient.put(`/admin/challenges/${id}`, challengeData);
+    return response.data;
+};
+
+export const adminDeleteChallenge = async (id: string) => {
+    await apiClient.delete(`/admin/challenges/${id}`);
 };
