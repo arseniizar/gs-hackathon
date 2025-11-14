@@ -18,6 +18,7 @@ public class Challenge {
     private String title;
     private String description;
     private ChallengeStatus status = ChallengeStatus.OPEN;
+    private String metric;
     private Instant createdAt;
     private Instant updatedAt;
 
