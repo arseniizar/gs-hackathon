@@ -12,26 +12,36 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository repo;
-    private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-//    public User register(String email, String password, String displayName) {
-//        if (repo.existsByEmail(email)) throw new IllegalArgumentException("Email in use");
-//        User u = User.builder()
-//                .email(email)
-//                .passwordHash(passwordEncoder.encode(password))
-//                .displayName(displayName)
-//                .roles(Set.of("ROLE_USER"))
-//                .build();
-//        return repo.save(u);
-//    }
-//
-//    public String login(String email, String password) {
-//        var opt = repo.findByEmail(email);
-//        if (opt.isEmpty()) throw new IllegalArgumentException("Invalid credentials");
-//        User u = opt.get();
-//        if (!passwordEncoder.matches(password, u.getPasswordHash())) throw new IllegalArgumentException("Invalid credentials");
-//        return jwtUtil.generateToken(u.getId(), u.getEmail(), u.getRoles());
-//    }
+    public final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    public User register(String email, String password, String displayName) {
+
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        User user = User.builder()
+                .email(email)
+                .passwordHash(encoder.encode(password))
+                .displayName(displayName)
+                .roles(Set.of("ROLE_USER"))
+                .build();
+
+        return userRepository.save(user);
+    }
+
+    public String login(String email, String password) {
+        var u = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+        if (!encoder.matches(password, u.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        return jwtUtil.generateToken(u);
+    }
+
 }

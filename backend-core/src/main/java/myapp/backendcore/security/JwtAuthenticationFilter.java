@@ -27,14 +27,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
+        // Якщо немає заголовка або він не Bearer – просто пропускаємо далі
         if (header == null || !header.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -42,30 +42,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = header.substring(7);
 
-        if (!jwtUtil.validateToken(token)) {
-            filterChain.doFilter(request, response);
-            return;
+        try {
+            // Якщо в тебе в JwtUtil метод називається інакше (getClaims),
+            // поміняй тут відповідно:
+            Claims claims = jwtUtil.extractClaims(token);
+            // Claims claims = jwtUtil.getClaims(token);
+
+            String email = claims.get("email", String.class);
+
+            // roles збережені як List<String> у claims
+            List<String> roles = claims.get("roles", List.class);
+
+            Collection<? extends GrantedAuthority> authorities =
+                    roles.stream()
+                            // Якщо в токені ролі вже йдуть з "ROLE_",
+                            // заміни цей рядок на new SimpleGrantedAuthority(role)
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .collect(Collectors.toList());
+
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    email,
+                    null,
+                    authorities
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+        } catch (Exception ex) {
+            // Якщо токен кривий/протух – просто чистимо контекст і йдемо далі
+            SecurityContextHolder.clearContext();
         }
-
-        Claims claims = jwtUtil.getClaims(token);
-        String userId = claims.getSubject();
-        String email = claims.get("email", String.class);
-
-        // roles is stored as a list of strings
-        List<String> roles = claims.get("roles", List.class);
-
-        Collection<? extends GrantedAuthority> authorities =
-                roles.stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                        .collect(Collectors.toList());
-
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                email, // principal (can be userId if you prefer)
-                null,
-                authorities
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(auth);
 
         filterChain.doFilter(request, response);
     }
