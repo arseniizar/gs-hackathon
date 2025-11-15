@@ -1,5 +1,6 @@
 package myapp.backendcore.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -11,6 +12,7 @@ public class User {
     @Id
     private String id;
     private String email;
+    @JsonIgnore
     private String passwordHash;
     private String displayName;
     private Set<String> roles; // e.g. ROLE_USER, ROLE_ADMIN

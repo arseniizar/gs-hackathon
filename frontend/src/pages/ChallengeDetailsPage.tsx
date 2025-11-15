@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Download, Upload, ArrowLeft } from 'lucide-react';
 import { SubmissionDialog } from '@/components/SubmissionDialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    getChallengeDetails,
-    getLeaderboardForChallenge,
-    getMySubmissions // 👈 Новий імпорт
-} from '@/lib/api';
+import { getChallengeDetails, getLeaderboardForChallenge, getMySubmissions } from '@/lib/api';
 import { ROUTES } from '@/router/paths';
 import {
     Table,
@@ -33,8 +29,8 @@ interface ChallengeDetails {
     metric: string;
     description: string;
     deadline: string | null;
-    rules: string; // Тепер приходить з API
-    dataAssets: DataAsset[]; // Тепер приходить з API
+    rules: string;
+    dataAssets: DataAsset[];
     status: 'OPEN' | 'CLOSED';
 }
 
@@ -48,14 +44,14 @@ interface LeaderboardEntry {
 
 interface UserSubmission {
     id: string;
-    submittedAt: string; // на бекенді createdAt
-    createdAt: string;   // альтернатива
+    submittedAt: string;
+    createdAt: string;
     status: string;
     score: number | null;
     filename: string;
 }
 
-// Компонент-скелетон
+// Компонент-скелетон для анімації завантаження
 function ChallengeDetailsSkeleton() {
     return (
         <div className="mx-auto max-w-6xl px-8 py-12 md:py-16">
@@ -88,6 +84,10 @@ function ChallengeDetailsSkeleton() {
 
 function ChallengeDetailsPage() {
     const { challengeId } = useParams<{ challengeId: string }>();
+    const location = useLocation();
+
+    const backLink = location.state?.fromAdmin ? ROUTES.ADMIN : ROUTES.HOME;
+    const backLinkText = location.state?.fromAdmin ? "Back to Admin Console" : "Back to all challenges";
 
     const [challenge, setChallenge] = useState<ChallengeDetails | null>(null);
     const [userSubmissions, setUserSubmissions] = useState<UserSubmission[]>([]);
@@ -100,7 +100,6 @@ function ChallengeDetailsPage() {
     const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
     const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
 
-    // 1. Завантаження основних даних челенджу
     useEffect(() => {
         const fetchData = async () => {
             if (!challengeId) {
@@ -108,7 +107,6 @@ function ChallengeDetailsPage() {
                 setIsLoading(false);
                 return;
             }
-
             setIsLoading(true);
             setError(null);
             try {
@@ -124,7 +122,6 @@ function ChallengeDetailsPage() {
         fetchData();
     }, [challengeId]);
 
-    // 2. Функції для лінивого завантаження інших табів
     const fetchLeaderboard = async () => {
         if (!challengeId) return;
         setIsLeaderboardLoading(true);
@@ -148,7 +145,6 @@ function ChallengeDetailsPage() {
         }
     };
 
-    // Обробка перемикання табів
     const handleTabChange = (value: string) => {
         if (value === 'leaderboard' && !leaderboardData) {
             fetchLeaderboard();
@@ -164,9 +160,9 @@ function ChallengeDetailsPage() {
         return (
             <div className="text-center py-24">
                 <p className="text-destructive mb-4">{error || "Failed to load challenge."}</p>
-                <Link to={ROUTES.HOME} className="inline-flex items-center gap-2 text-sm text-primary underline">
+                <Link to={backLink} className="inline-flex items-center gap-2 text-sm text-primary underline">
                     <ArrowLeft className="h-4 w-4" />
-                    Back to all challenges
+                    {backLinkText}
                 </Link>
             </div>
         );
@@ -179,9 +175,9 @@ function ChallengeDetailsPage() {
     return (
         <>
             <div className="mx-auto max-w-6xl px-8 py-12 md:py-16">
-                <Link to={ROUTES.HOME} className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground mb-8">
+                <Link to={backLink} state={{ fromAdmin: location.state?.fromAdmin }} className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground mb-8">
                     <ArrowLeft className="h-4 w-4" />
-                    Back to all challenges
+                    {backLinkText}
                 </Link>
 
                 <div className="flex flex-col md:flex-row justify-between md:items-center mb-12 gap-8">
@@ -197,7 +193,6 @@ function ChallengeDetailsPage() {
                             Deadline: <span className="font-semibold text-foreground">{timeRemaining}</span>
                         </p>
                     </div>
-
                     {challenge.status === 'OPEN' ? (
                         <Button size="lg" className="w-full md:w-auto flex-shrink-0" onClick={() => setIsDialogOpen(true)}>
                             <Upload className="mr-2 h-4 w-4" /> Make Submission
