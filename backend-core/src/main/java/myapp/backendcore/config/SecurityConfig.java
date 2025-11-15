@@ -1,6 +1,7 @@
-package myapp.backendcore.security;
+package myapp.backendcore.config;
 
 import lombok.RequiredArgsConstructor;
+import myapp.backendcore.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,13 +27,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(AbstractHttpConfigurer::disable)// <-- IMPORTANT for CORS support
+                .cors(cors -> {})   // ⭐ REQUIRED
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sess ->
                         sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // Authentication public endpoints
+                        // Allow OPTIONS requests (CORS preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Authentication endpoints
                         .requestMatchers("/api/auth/**").permitAll()
 
                         // Public challenge GET requests
@@ -50,8 +55,8 @@ public class SecurityConfig {
                         // Admin-only area
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Node.js worker scoring endpoints (secure)
-                        .requestMatchers("/api/internal/**").hasRole("ADMIN") // or custom "ROLE_WORKER"
+                        // Worker
+                        .requestMatchers("/api/internal/**").hasRole("ADMIN")
 
                         // Everything else requires JWT
                         .anyRequest().authenticated()

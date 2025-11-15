@@ -105,6 +105,9 @@ public class ChallengeService {
                 .description(challenge.getDescription())
                 .metric(challenge.getMetric())
                 .status(challenge.getStatus())
+                .deadline(challenge.getDeadline())
+                .rules(challenge.getRules()) // 👈
+                .dataAssets(challenge.getDataAssets()) // 👈
                 .createdAt(challenge.getCreatedAt())
                 .updatedAt(challenge.getUpdatedAt())
                 .build();
