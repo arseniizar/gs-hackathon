@@ -85,27 +85,3 @@ public class SubmissionController {
         }
     }
 }
-
-@RestController
-@RequestMapping("/api/internal/submissions")
-@RequiredArgsConstructor
-public class InternalSubmissionController {
-
-    private final SubmissionService submissionService;
-    private final String workerSecret; // inject from properties
-
-    @PostMapping("/{id}/result")
-    public ResponseEntity<Void> handleWorkerResult(
-            @PathVariable String id,
-            @RequestBody SubmissionResultDto body,
-            @RequestHeader("X-Worker") String workerHeaderSecret
-    ) {
-        // Verify worker secret
-        if (!workerSecret.equals(workerHeaderSecret)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        submissionService.applyWorkerResult(id, body);
-        return ResponseEntity.noContent().build();
-    }
-}

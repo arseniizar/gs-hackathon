@@ -1,10 +1,12 @@
-package myapp.backendcore.security;
+package myapp.backendcore.config;
 
 import lombok.RequiredArgsConstructor;
+import myapp.backendcore.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,10 +29,14 @@ public class SecurityConfig {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)// <-- IMPORTANT for CORS support
+                .cors(Customizer.withDefaults())
                 .sessionManagement(sess ->
                         sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+
+                        // Always allow CORS pre-flight checks
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Authentication public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
