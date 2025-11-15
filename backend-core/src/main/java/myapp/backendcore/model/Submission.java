@@ -33,4 +33,10 @@ public class Submission {
 
     private Instant createdAt;
     private Instant updatedAt;
+
+    private String workerHash;
+    private Boolean plagiarism;      // true if worker detected duplicate hash
+    private Integer workerTotalRows; // how many rows were used to score
+    private Instant workerScoredAt;  // when the worker scored it
+
 }
