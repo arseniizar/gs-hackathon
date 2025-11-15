@@ -1,5 +1,6 @@
-import { connectDB } from "./services/db.js";
-import { startQueueListener } from "./services/queueService.js";
+import { connectDB } from "./db.js";
+import { startQueueListener } from "./queueService.js";
+
 
 const start = async () => {
     await connectDB();
