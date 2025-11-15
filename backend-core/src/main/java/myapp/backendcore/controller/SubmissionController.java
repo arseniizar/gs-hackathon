@@ -1,5 +1,6 @@
 package myapp.backendcore.controller;
 
+import myapp.backendcore.exception.ResourceNotFoundException;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.model.User;
 import myapp.backendcore.repository.SubmissionRepository;
@@ -123,5 +124,21 @@ public class SubmissionController {
             return ResponseEntity.badRequest().body("Invalid submission ID.");
         }
         return ResponseEntity.ok("Ground truth downloaded successfully.");
+    }
+
+    @GetMapping("/submissions/{id}")
+    public ResponseEntity<Submission> getSubmissionDetails(@PathVariable String id, Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Submission submission = submissionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found"));
+
+        if (!submission.getUserId().equals(user.getId()) &&
+                !authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(submission);
     }
 }

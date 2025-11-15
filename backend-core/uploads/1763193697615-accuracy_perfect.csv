@@ -1,4 +1,4 @@
-id,y_true
+id,pred
 1,1
 2,0
 3,1

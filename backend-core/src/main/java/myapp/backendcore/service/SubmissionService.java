@@ -1,8 +1,11 @@
 package myapp.backendcore.service;
 
 import myapp.backendcore.dto.SubmissionResultDto;
+import myapp.backendcore.dto.WorkerSubmissionDto;
+import myapp.backendcore.model.Challenge;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.model.SubmissionStatus;
+import myapp.backendcore.repository.ChallengeRepository;
 import myapp.backendcore.repository.SubmissionRepository;
 import myapp.backendcore.repository.UserRepository;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -28,6 +31,7 @@ public class SubmissionService {
 
     private final SubmissionRepository submissionRepository;
     private final UserRepository userRepository;
+    private final ChallengeRepository challengeRepository;
 
     @Value("${hackathon.storage.upload-dir}")
     private String uploadDir;
@@ -40,9 +44,10 @@ public class SubmissionService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public SubmissionService(SubmissionRepository submissionRepository, UserRepository userRepository) {
+    public SubmissionService(SubmissionRepository submissionRepository, UserRepository userRepository, ChallengeRepository challengeRepository) {
         this.submissionRepository = submissionRepository;
         this.userRepository = userRepository;
+        this.challengeRepository = challengeRepository;
     }
 
     public Submission createSubmission(String userId, String challengeId, MultipartFile file) throws Exception {
@@ -221,4 +226,36 @@ public class SubmissionService {
         submission.setUpdatedAt(Instant.now());
         submissionRepository.save(submission);
     }
+
+    public Optional<WorkerSubmissionDto> fetchNextPendingTask() {
+        Optional<Submission> nextSubmissionOpt = submissionRepository.findByStatus(SubmissionStatus.PENDING)
+                .stream()
+                .min(Comparator.comparing(Submission::getCreatedAt));
+
+        if (nextSubmissionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Submission submission = nextSubmissionOpt.get();
+
+        // Знаходимо челендж, щоб отримати метрику
+        Challenge challenge = challengeRepository.findById(submission.getChallengeId())
+                .orElseThrow(() -> new RuntimeException("Challenge not found for submission: " + submission.getId()));
+
+        // Позначаємо як PROCESSING
+        submission.setStatus(SubmissionStatus.PROCESSING);
+        submission.setUpdatedAt(Instant.now());
+        submissionRepository.save(submission);
+
+        // Створюємо DTO для воркера
+        Path filePath = Paths.get(uploadDir, submission.getFilename());
+        WorkerSubmissionDto dto = new WorkerSubmissionDto(
+                submission.getId(),
+                filePath.toAbsolutePath().toString(),
+                challenge.getMetric()
+        );
+
+        return Optional.of(dto);
+    }
+
 }
