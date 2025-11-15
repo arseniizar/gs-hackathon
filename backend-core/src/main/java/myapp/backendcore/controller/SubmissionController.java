@@ -1,6 +1,7 @@
 package myapp.backendcore.controller;
 
 import lombok.RequiredArgsConstructor;
+import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.repository.UserRepository;
 import myapp.backendcore.service.SubmissionService;
@@ -46,5 +47,65 @@ public class SubmissionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Unexpected error");
         }
+    }
+
+    @GetMapping("/submission/{id}/file")
+    public ResponseEntity<?> getSubmissionFile(@PathVariable("id") String submissionId) {
+        try {
+            var fileResource = submissionService.getSubmissionFile(submissionId);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResource.getFilename() + "\"")
+                    .body(fileResource);
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error");
+        }
+    }
+
+    @PostMapping("/submission/{id}/score")
+    public ResponseEntity<?> scoreSubmission(@PathVariable("id") String submissionId) {
+        try {
+            double score = submissionService.evaluateSubmission(submissionId);
+
+            return ResponseEntity.ok()
+                    .body("Submission scored successfully. Score: " + score);
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error occurred while scoring the submission");
+        }
+    }
+}
+
+@RestController
+@RequestMapping("/api/internal/submissions")
+@RequiredArgsConstructor
+public class InternalSubmissionController {
+
+    private final SubmissionService submissionService;
+    private final String workerSecret; // inject from properties
+
+    @PostMapping("/{id}/result")
+    public ResponseEntity<Void> handleWorkerResult(
+            @PathVariable String id,
+            @RequestBody SubmissionResultDto body,
+            @RequestHeader("X-Worker") String workerHeaderSecret
+    ) {
+        // Verify worker secret
+        if (!workerSecret.equals(workerHeaderSecret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        submissionService.applyWorkerResult(id, body);
+        return ResponseEntity.noContent().build();
     }
 }

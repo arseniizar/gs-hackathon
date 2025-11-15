@@ -1,6 +1,7 @@
 package myapp.backendcore.service;
 
 import lombok.RequiredArgsConstructor;
+import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.model.SubmissionStatus;
 import myapp.backendcore.repository.SubmissionRepository;
@@ -9,9 +10,18 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import myapp.backendcore.dto.SubmissionResultDto;
 
 import java.io.InputStream;
 import java.nio.file.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Optional;
@@ -25,6 +35,14 @@ public class SubmissionService {
 
     @Value("${hackathon.storage.upload-dir}")
     private String uploadDir;
+
+    @Value("${worker.secret}")
+    private String workerSecret;
+
+    @Value("${worker.api.url}")
+    private String workerApiUrl;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public Submission createSubmission(String userId, String challengeId, MultipartFile file) throws Exception {
 
@@ -94,5 +112,112 @@ public class SubmissionService {
         s.setUpdatedAt(Instant.now());
 
         return submissionRepository.save(s);
+    }
+
+    public Resource getSubmissionFile(String submissionId) throws Exception {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+
+        Path filePath = Paths.get(uploadDir).resolve(submission.getFilename());
+        if (!Files.exists(filePath)) {
+            throw new IllegalArgumentException("File not found");
+        }
+
+        return new UrlResource(filePath.toUri());
+    }
+
+    public void processAndSendSubmission(String submissionId) throws Exception {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+
+        Path filePath = Paths.get(uploadDir).resolve(submission.getFilename());
+        if (!Files.exists(filePath)) {
+            throw new IllegalArgumentException("File not found");
+        }
+
+        // Read the file content
+        String fileContent = Files.readString(filePath, StandardCharsets.UTF_8);
+
+        // Append WORKER_SECRET to the file content
+        String updatedContent = fileContent + "\n\nWORKER_SECRET=" + workerSecret;
+
+        // Write the updated content to a temporary file
+        Path tempFilePath = Paths.get(uploadDir).resolve("temp-" + submission.getFilename());
+        Files.writeString(tempFilePath, updatedContent, StandardCharsets.UTF_8);
+
+        // Send the file via REST
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<byte[]> requestEntity = new HttpEntity<>(Files.readAllBytes(tempFilePath), headers);
+
+        try {
+            restTemplate.postForEntity(workerApiUrl + "/process-file", requestEntity, String.class);
+        } finally {
+            // Clean up the temporary file
+            Files.deleteIfExists(tempFilePath);
+        }
+    }
+
+    public double evaluateSubmission(String submissionId) throws Exception {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+
+        Path filePath = Paths.get(uploadDir).resolve(submission.getFilename());
+        if (!Files.exists(filePath)) {
+            throw new IllegalArgumentException("File not found");
+        }
+
+        // Send the file to the worker for scoring
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<byte[]> requestEntity = new HttpEntity<>(Files.readAllBytes(filePath), headers);
+
+        ResponseEntity<Double> response = restTemplate.postForEntity(
+                workerApiUrl + "/score-file",
+                requestEntity,
+                Double.class
+        );
+
+        double score = response.getBody();
+
+        // Update the submission with the score
+        submission.setScore(score);
+        submission.setStatus(SubmissionStatus.DONE);
+        submission.setUpdatedAt(Instant.now());
+        submissionRepository.save(submission);
+
+        return score;
+    }
+
+    public void applyWorkerResult(String submissionId, SubmissionResultDto body) {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found: " + submissionId));
+
+        String status = body.getStatus();
+        if ("DONE".equalsIgnoreCase(status)) {
+            submission.setStatus(SubmissionStatus.DONE);
+            submission.setScore(body.getScore());
+        } else if ("FAILED".equalsIgnoreCase(status)) {
+            submission.setStatus(SubmissionStatus.FAILED);
+            submission.setErrorMessage(body.getErrorMessage());
+        } else {
+            throw new IllegalArgumentException("Unknown worker status: " + status);
+        }
+
+        // Store worker metadata
+        submission.setWorkerHash(body.getHash());
+        submission.setPlagiarism(Boolean.TRUE.equals(body.getPlagiarism()));
+        submission.setWorkerTotalRows(body.getTotalRows());
+
+        if (body.getTimestamp() != null) {
+            submission.setWorkerScoredAt(Instant.ofEpochMilli(body.getTimestamp()));
+        } else {
+            submission.setWorkerScoredAt(Instant.now());
+        }
+
+        submission.setUpdatedAt(Instant.now());
+        submissionRepository.save(submission);
     }
 }
