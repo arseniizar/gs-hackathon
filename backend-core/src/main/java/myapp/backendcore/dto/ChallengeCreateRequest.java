@@ -2,23 +2,21 @@ package myapp.backendcore.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import myapp.backendcore.model.ChallengeStatus;
-
-import java.util.Optional;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ChallengeCreateRequest {
 
-    @NotBlank
+    @NotBlank(message = "Title is required")
+    @Size(min = 3, max = 120, message = "Title must be between 3 and 120 characters")
     private String title;
 
-    @Size(max = 2000)
+    @NotBlank(message = "Description is required")
+    @Size(min = 10, message = "Description must be at least 10 characters")
     private String description;
 
-    private Optional<ChallengeStatus> status = Optional.empty(); // Initialize to Optional.empty()
+    @NotBlank(message = "Metric is required")
+    private String metric;
+
+    private String deadlineUtc; // optional for now
 }
