@@ -1,6 +1,5 @@
 package myapp.backendcore.service;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.ChallengeCreateRequest;
 import myapp.backendcore.dto.ChallengeResponse;
 import myapp.backendcore.dto.ChallengeUpdateRequest;
@@ -14,10 +13,13 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;
+
+    public ChallengeService(ChallengeRepository challengeRepository) {
+        this.challengeRepository = challengeRepository;
+    }
 
     // ─────────────────────────────────────────────────────────────
     // CREATE

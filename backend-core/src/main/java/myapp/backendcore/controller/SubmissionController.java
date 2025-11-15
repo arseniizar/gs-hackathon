@@ -1,6 +1,5 @@
 package myapp.backendcore.controller;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.repository.SubmissionRepository;
@@ -8,20 +7,23 @@ import myapp.backendcore.repository.UserRepository;
 import myapp.backendcore.service.SubmissionService;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api")
 public class SubmissionController {
 
     private final SubmissionService submissionService;
     private final UserRepository userRepository;
     private final SubmissionRepository submissionRepository;
+
+    public SubmissionController(SubmissionService submissionService, UserRepository userRepository) {
+        this.submissionService = submissionService;
+        this.userRepository = userRepository;
+    }
 
     @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> submit(
@@ -102,29 +104,5 @@ public class SubmissionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Unexpected error occurred while scoring the submission");
         }
-    }
-}
-
-@RestController
-@RequestMapping("/api/internal/submissions")
-@RequiredArgsConstructor
-public class InternalSubmissionController {
-
-    private final SubmissionService submissionService;
-    private final String workerSecret; // inject from properties
-
-    @PostMapping("/{id}/result")
-    public ResponseEntity<Void> handleWorkerResult(
-            @PathVariable String id,
-            @RequestBody SubmissionResultDto body,
-            @RequestHeader("X-Worker") String workerHeaderSecret
-    ) {
-        // Verify worker secret
-        if (!workerSecret.equals(workerHeaderSecret)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        submissionService.applyWorkerResult(id, body);
-        return ResponseEntity.noContent().build();
     }
 }

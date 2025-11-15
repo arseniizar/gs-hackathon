@@ -1,6 +1,5 @@
 package myapp.backendcore.service;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.model.SubmissionStatus;
@@ -17,8 +16,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import myapp.backendcore.dto.SubmissionResultDto;
-
 import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +24,6 @@ import java.util.Comparator;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class SubmissionService {
 
     private final SubmissionRepository submissionRepository;
@@ -43,6 +39,11 @@ public class SubmissionService {
     private String workerApiUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
+
+    public SubmissionService(SubmissionRepository submissionRepository, UserRepository userRepository) {
+        this.submissionRepository = submissionRepository;
+        this.userRepository = userRepository;
+    }
 
     public Submission createSubmission(String userId, String challengeId, MultipartFile file) throws Exception {
 

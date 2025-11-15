@@ -1,7 +1,7 @@
 package myapp.backendcore.controller;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import myapp.backendcore.dto.AuthResponse;
 import myapp.backendcore.dto.LoginRequest;
 import myapp.backendcore.dto.RegisterRequest;
 import myapp.backendcore.model.User;
@@ -11,11 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping("/register")
     public ResponseEntity<User> register(@Valid @RequestBody RegisterRequest req) {
@@ -29,11 +32,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
-        String token = authService.login(req.getEmail(), req.getPassword());
-        return ResponseEntity.ok().body(new Object() {
-            public final String tokenValue = token;
-            public String getToken() { return tokenValue; }
-        });
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
+        AuthResponse response = authService.login(req.getEmail(), req.getPassword());
+        return ResponseEntity.ok(response);
     }
 }

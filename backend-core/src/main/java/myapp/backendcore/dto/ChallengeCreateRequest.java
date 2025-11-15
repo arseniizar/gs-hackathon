@@ -2,9 +2,7 @@ package myapp.backendcore.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
 
-@Data
 public class ChallengeCreateRequest {
 
     @NotBlank(message = "Title is required")
@@ -19,4 +17,39 @@ public class ChallengeCreateRequest {
     private String metric;
 
     private String deadlineUtc; // optional for now
+
+    public ChallengeCreateRequest() {
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getMetric() {
+        return metric;
+    }
+
+    public void setMetric(String metric) {
+        this.metric = metric;
+    }
+
+    public String getDeadlineUtc() {
+        return deadlineUtc;
+    }
+
+    public void setDeadlineUtc(String deadlineUtc) {
+        this.deadlineUtc = deadlineUtc;
+    }
 }

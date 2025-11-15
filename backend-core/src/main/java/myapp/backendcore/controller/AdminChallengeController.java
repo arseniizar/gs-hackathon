@@ -4,7 +4,6 @@ import myapp.backendcore.dto.ChallengeCreateRequest;
 import myapp.backendcore.dto.ChallengeResponse;
 import myapp.backendcore.dto.ChallengeUpdateRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.service.ChallengeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +14,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/challenges")
-@RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminChallengeController {
 
     private final ChallengeService challengeService;
+
+    public AdminChallengeController(ChallengeService challengeService) {
+        this.challengeService = challengeService;
+    }
 
     @PostMapping
     public ResponseEntity<ChallengeResponse> createChallenge(

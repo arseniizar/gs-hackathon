@@ -1,26 +1,32 @@
 package myapp.backendcore.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import myapp.backendcore.dto.AuthResponse;
 import myapp.backendcore.model.User;
 import myapp.backendcore.repository.UserRepository;
 import myapp.backendcore.security.JwtUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AuthService {
 
-    public final UserRepository userRepository;
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     private static final String ROLE_USER = "ROLE_USER";
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
+
+    public AuthService(UserRepository userRepository, JwtUtil jwtUtil) {
+        this.userRepository = userRepository;
+        this.jwtUtil = jwtUtil;
+    }
 
     public User register(String email, String password, String displayName) {
 
@@ -48,7 +54,7 @@ public class AuthService {
         return userRepository.save(user);
     }
 
-    public String login(String email, String password) {
+    public AuthResponse login(String email, String password) {
         var u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
@@ -56,6 +62,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        return jwtUtil.generateToken(u);
+        String token = jwtUtil.generateToken(u);
+        return new AuthResponse(token, u.getId());
     }
 }
