@@ -1,6 +1,7 @@
-package myapp.backendcore.security;
+package myapp.backendcore.config;
 
 import lombok.RequiredArgsConstructor;
+import myapp.backendcore.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
