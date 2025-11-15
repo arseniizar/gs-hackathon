@@ -1,0 +1,3633 @@
+
+====================
+// Файл: README.md
+====================
+
+dont forget to create .venv, .env
+
+====================
+// Файл: frontend/tsconfig.node.json
+====================
+
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+====================
+// Файл: frontend/index.html
+====================
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" href="/favicon.ico" sizes="any"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>GS Hackathon App</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
+
+====================
+// Файл: frontend/tailwind.config.js
+====================
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+    content: [
+        './index.html',
+        './src/**/*.{js,ts,jsx,tsx}',
+    ],
+    theme: { // 👈 Додай або розшир цю секцію
+        extend: {
+            fontFamily: { // 👈 Додай це
+                sans: ['Inter', 'sans-serif'],
+                serif: ['DM Serif Display', 'serif'],
+            },
+        },
+    },
+    plugins: [
+        require('tailwindcss-animate'),
+    ],
+}
+====================
+// Файл: frontend/tsconfig.app.json
+====================
+
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": ["src"]
+}
+
+====================
+// Файл: frontend/README.md
+====================
+
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+====================
+// Файл: frontend/package.json
+====================
+
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@tailwindcss/vite": "^4.1.17",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.553.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.6",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "autoprefixer": "^10.4.22",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vite": "^7.2.2"
+  }
+}
+
+====================
+// Файл: frontend/components.json
+====================
+
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/App.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "registries": {}
+}
+
+====================
+// Файл: frontend/tsconfig.json
+====================
+
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  }
+}
+
+====================
+// Файл: frontend/eslint.config.js
+====================
+
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+  },
+])
+
+====================
+// Файл: frontend/vite.config.ts
+====================
+
+import {defineConfig} from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
+
+// https://vite.dev/config/
+export default defineConfig({
+    plugins: [
+        react(),
+        tailwindcss()
+    ],
+    resolve: {
+        alias: {
+            "@": path.resolve(__dirname, "./src"),
+        },
+    },
+})
+
+====================
+// Файл: frontend/src/App.tsx
+====================
+
+import { Link, Outlet } from 'react-router-dom';
+import { ThemeToggle } from './components/theme-toggle';
+import { Button } from './components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+import { ROUTES } from './router/paths';
+import { useAuth } from './contexts/AuthContext';
+
+function AppLayout() {
+    const { isAuthenticated, teamName, logout } = useAuth();
+
+    return (
+        <div className="min-h-screen w-full bg-background text-foreground font-sans">
+            <header className="flex h-16 items-center justify-between border-b px-8 md:px-16">
+                <div className="flex items-center gap-8">
+                    <Link to={ROUTES.HOME} className="text-lg font-bold tracking-wider font-sans">
+                        GS HACKATHON
+                    </Link>
+                    <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/70">
+                        <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
+                        <Link to={ROUTES.LEADERBOARD} className="transition-colors hover:text-foreground">Leaderboard</Link>
+                        <a href="#" className="transition-colors hover:text-foreground">Docs</a>
+                    </nav>
+                </div>
+                <div className="flex items-center gap-2">
+                    {isAuthenticated ? (
+                        <>
+                            <Button variant="ghost">{teamName}</Button>
+                            <Button variant="outline" size="sm" onClick={logout}>Logout</Button>
+                        </>
+                    ) : (
+                        <Button asChild variant="outline" size="sm">
+                            <Link to={ROUTES.LOGIN}>Login</Link>
+                        </Button>
+                    )}
+                    <ThemeToggle />
+                </div>
+            </header>
+
+            <div className="flex items-center justify-center gap-3 border-b bg-secondary p-2.5 text-sm text-secondary-foreground">
+                <AlertTriangle className="h-4 w-4" />
+                <p>
+                    <span className="font-semibold">NOTICE:</span> Submissions are final. Please review your solution carefully.
+                </p>
+            </div>
+
+            <main>
+                <Outlet />
+            </main>
+        </div>
+    );
+}
+
+export default AppLayout;
+
+====================
+// Файл: frontend/src/main.tsx
+====================
+
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { RouterProvider } from 'react-router-dom';
+import { ThemeProvider } from './components/theme-provider';
+import { AuthProvider } from './contexts/AuthContext';
+import { router } from './router'; // Наш новий роутер
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <AuthProvider>
+                <RouterProvider router={router} />
+            </AuthProvider>
+        </ThemeProvider>
+    </StrictMode>
+);
+
+====================
+// Файл: frontend/src/App.css
+====================
+
+@layer base {
+    /* Визначення CSS змінних для тем */
+    :root {
+        /* GS Light Theme (Default) */
+        --background: 210 40% 100%;
+        --foreground: 222.2 47.4% 11.2%;
+        --card: 210 40% 100%;
+        --card-foreground: 222.2 47.4% 11.2%;
+        --popover: 210 40% 100%;
+        --popover-foreground: 222.2 47.4% 11.2%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 217 91% 60%;
+        --radius: 0.3rem;
+    }
+
+    .dark {
+        /* GS Dark Theme */
+        --background: 224 71% 4%;
+        --foreground: 210 40% 98%;
+        --card: 224 71% 6%;
+        --card-foreground: 210 40% 98%;
+        --popover: 224 71% 4%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 224 39% 12%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 224 39% 12%;
+        --muted-foreground: 215 20% 65%;
+        --accent: 224 39% 12%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 224 39% 12%;
+        --input: 224 39% 12%;
+        --ring: 217 91% 60%;
+    }
+
+    /* Застосування базових стилів до елементів */
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+====================
+// Файл: frontend/src/index.css
+====================
+
+@import "tailwindcss";
+
+@theme {
+    --radius: 0.2rem;
+
+    /* --- Light Theme (Default) --- */
+    --color-background: oklch(1 0 0);
+    --color-foreground: oklch(0.15 0.01 240);
+    --color-card: oklch(1 0 0);
+    --color-card-foreground: oklch(0.15 0.01 240);
+    --color-popover: oklch(1 0 0);
+    --color-popover-foreground: oklch(0.15 0.01 240);
+    --color-primary: oklch(0.5 0.12 260);
+    --color-primary-foreground: oklch(1 0 0);
+    --color-secondary: oklch(0.98 0.01 240);
+    --color-secondary-foreground: oklch(0.15 0.01 240);
+    --color-muted: oklch(0.98 0.01 240);
+    --color-muted-foreground: oklch(0.4 0.02 240);
+    --color-accent: oklch(0.98 0.01 240);
+    --color-accent-foreground: oklch(0.15 0.01 240);
+    --color-destructive: oklch(0.55 0.2 25);
+    --color-destructive-foreground: oklch(1 0 0);
+    --color-border: oklch(0.94 0.01 240);
+    --color-input: oklch(0.94 0.01 240);
+    --color-ring: oklch(0.5 0.12 260);
+}
+
+/* --- Dark Theme Overrides --- */
+/*
+  КЛЮЧОВЕ ВИПРАВЛЕННЯ:
+  Ми виносимо селектор .dark з @layer.
+  Це гарантує, що його правила будуть мати вищий пріоритет.
+*/
+.dark {
+    --color-background: oklch(0.12 0.02 240); /* Deep Navy */
+    --color-foreground: oklch(0.95 0.01 240); /* Off-white */
+    --color-card: oklch(0.15 0.02 240);
+    --color-card-foreground: oklch(0.95 0.01 240);
+    --color-popover: oklch(0.12 0.02 240);
+    --color-popover-foreground: oklch(0.95 0.01 240);
+    --color-primary: oklch(0.6 0.12 260); /* Brighter blue for dark mode */
+    --color-primary-foreground: oklch(0.95 0.01 240);
+    --color-secondary: oklch(0.15 0.02 240); /* Darker grey */
+    --color-secondary-foreground: oklch(0.95 0.01 240);
+    --color-muted: oklch(0.15 0.02 240);
+    --color-muted-foreground: oklch(0.55 0.02 240);
+    --color-accent: oklch(0.15 0.02 240);
+    --color-accent-foreground: oklch(0.95 0.01 240);
+    --color-destructive: oklch(0.55 0.2 25);
+    --color-destructive-foreground: oklch(0.95 0.01 240);
+    --color-border: oklch(0.2 0.02 240);
+    --color-input: oklch(0.2 0.02 240);
+    --color-ring: oklch(0.6 0.12 260);
+}
+
+
+@layer base {
+    /* --- Font Application --- */
+    html {
+        @apply font-sans;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-serif;
+    }
+
+    /* --- Base Styles --- */
+    body {
+        @apply bg-background text-foreground;
+    }
+    * {
+        @apply border-border;
+    }
+}
+
+====================
+// Файл: frontend/src/contexts/AuthContext.tsx
+====================
+
+import { createContext, useContext, useState, type ReactNode } from 'react';
+
+interface AuthContextType {
+    isAuthenticated: boolean;
+    login: (teamName: string) => void;
+    logout: () => void;
+    teamName: string | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+    const [teamName, setTeamName] = useState<string | null>(null);
+    const isAuthenticated = !!teamName;
+
+    const login = (name: string) => {
+        setTeamName(name);
+        // В реальному додатку тут буде запит до API та збереження токену
+    };
+
+    const logout = () => {
+        setTeamName(null);
+        // В реальному додатку тут буде видалення токену
+    };
+
+    return (
+        <AuthContext.Provider value={{ isAuthenticated, teamName, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+}
+
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}
+====================
+// Файл: frontend/src/components/theme-provider.tsx
+====================
+
+import { createContext, useContext, useEffect, useState } from "react"
+
+type Theme = "dark" | "light" | "system"
+
+type ThemeProviderProps = {
+    children: React.ReactNode
+    defaultTheme?: Theme
+    storageKey?: string
+}
+
+type ThemeProviderState = {
+    theme: Theme
+    setTheme: (theme: Theme) => void
+}
+
+const initialState: ThemeProviderState = {
+    theme: "system",
+    setTheme: () => null,
+}
+
+const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
+
+export function ThemeProvider({
+                                  children,
+                                  defaultTheme = "system",
+                                  storageKey = "vite-ui-theme",
+                                  ...props
+                              }: ThemeProviderProps) {
+    const [theme, setTheme] = useState<Theme>(
+        () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    )
+
+    useEffect(() => {
+        const root = window.document.documentElement
+        root.classList.remove("light", "dark")
+
+        if (theme === "system") {
+            const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+                .matches
+                ? "dark"
+                : "light"
+
+            root.classList.add(systemTheme)
+            return
+        }
+
+        root.classList.add(theme)
+    }, [theme])
+
+    const value = {
+        theme,
+        setTheme: (theme: Theme) => {
+            localStorage.setItem(storageKey, theme)
+            setTheme(theme)
+        },
+    }
+
+    return (
+        <ThemeProviderContext.Provider {...props} value={value}>
+            {children}
+        </ThemeProviderContext.Provider>
+    )
+}
+
+export const useTheme = () => {
+    const context = useContext(ThemeProviderContext)
+
+    if (context === undefined)
+        throw new Error("useTheme must be used within a ThemeProvider")
+
+    return context
+}
+
+====================
+// Файл: frontend/src/components/SubmissionDialog.tsx
+====================
+
+import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+interface SubmissionDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    challengeTitle: string;
+}
+
+export function SubmissionDialog({ open, onOpenChange, challengeTitle }: SubmissionDialogProps) {
+    const [file, setFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            setFile(event.target.files[0]);
+            setError(null);
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!file) {
+            setError("Please select a file to submit.");
+            return;
+        }
+
+        setIsUploading(true);
+        setError(null);
+
+        // Імітація завантаження на сервер
+        console.log("Uploading file:", file.name);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        console.log("Upload complete!");
+        setIsUploading(false);
+        onOpenChange(false); // Закриваємо діалог
+        setFile(null); // Скидаємо файл
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Submit to: {challengeTitle}</DialogTitle>
+                    <DialogDescription>
+                        Select your solution file. The submission will be final.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid w-full max-w-sm items-center gap-1.5">
+                        <Label htmlFor="solution-file">Solution File (.csv)</Label>
+                        <Input id="solution-file" type="file" onChange={handleFileChange} accept=".csv" />
+                        {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSubmit} disabled={!file || isUploading}>
+                        {isUploading ? "Uploading..." : "Submit Solution"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+====================
+// Файл: frontend/src/components/theme-toggle.tsx
+====================
+
+import { Moon, Sun } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useTheme } from "@/components/theme-provider"
+
+export function ThemeToggle() {
+    const { theme, setTheme } = useTheme()
+
+    const toggleTheme = () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark')
+    }
+
+    return (
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+        >
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        </Button>
+    )
+}
+
+====================
+// Файл: frontend/src/components/ui/tabs.tsx
+====================
+
+import * as React from "react"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
+
+import { cn } from "@/lib/utils"
+
+function Tabs({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  return (
+    <TabsPrimitive.Root
+      data-slot="tabs"
+      className={cn("flex flex-col gap-2", className)}
+      {...props}
+    />
+  )
+}
+
+function TabsList({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.List>) {
+  return (
+    <TabsPrimitive.List
+      data-slot="tabs-list"
+      className={cn(
+        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TabsTrigger({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+  return (
+    <TabsPrimitive.Trigger
+      data-slot="tabs-trigger"
+      className={cn(
+        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TabsContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+  return (
+    <TabsPrimitive.Content
+      data-slot="tabs-content"
+      className={cn("flex-1 outline-none", className)}
+      {...props}
+    />
+  )
+}
+
+export { Tabs, TabsList, TabsTrigger, TabsContent }
+
+====================
+// Файл: frontend/src/components/ui/card.tsx
+====================
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+const Card = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div
+        ref={ref}
+        className={cn(
+            "rounded-lg border bg-card text-card-foreground shadow-sm",
+            className
+        )}
+        {...props}
+    />
+))
+Card.displayName = "Card"
+
+const CardHeader = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div
+        ref={ref}
+        className={cn("flex flex-col space-y-1.5 p-6", className)}
+        {...props}
+    />
+))
+CardHeader.displayName = "CardHeader"
+
+const CardTitle = React.forwardRef<
+    HTMLParagraphElement,
+    React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+    <h3
+        ref={ref}
+        className={cn(
+            "text-2xl font-semibold leading-none tracking-tight",
+            className
+        )}
+        {...props}
+    />
+))
+CardTitle.displayName = "CardTitle"
+
+const CardDescription = React.forwardRef<
+    HTMLParagraphElement,
+    React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+    <p
+        ref={ref}
+        className={cn("text-sm text-muted-foreground", className)}
+        {...props}
+    />
+))
+CardDescription.displayName = "CardDescription"
+
+const CardContent = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
+
+const CardFooter = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+    <div
+        ref={ref}
+        className={cn("flex items-center p-6 pt-0", className)}
+        {...props}
+    />
+))
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+
+====================
+// Файл: frontend/src/components/ui/label.tsx
+====================
+
+"use client"
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+
+import { cn } from "@/lib/utils"
+
+function Label({
+  className,
+  ...props
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+  return (
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Label }
+
+====================
+// Файл: frontend/src/components/ui/dialog.tsx
+====================
+
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { XIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+function Dialog({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
+
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
+
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal data-slot="dialog-portal">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close
+            data-slot="dialog-close"
+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            <XIcon />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+}
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg leading-none font-semibold", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}
+
+====================
+// Файл: frontend/src/components/ui/badge.tsx
+====================
+
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const badgeVariants = cva(
+  "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+        destructive:
+          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline:
+          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+function Badge({
+  className,
+  variant,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot : "span"
+
+  return (
+    <Comp
+      data-slot="badge"
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
+  )
+}
+
+export { Badge, badgeVariants }
+
+====================
+// Файл: frontend/src/components/ui/table.tsx
+====================
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+const Table = React.forwardRef<
+    HTMLTableElement,
+    React.HTMLAttributes<HTMLTableElement>
+>(({ className, ...props }, ref) => (
+    <div className="relative w-full overflow-auto">
+        <table
+            ref={ref}
+            className={cn("w-full caption-bottom text-sm", className)}
+            {...props}
+        />
+    </div>
+))
+Table.displayName = "Table"
+
+const TableHeader = React.forwardRef<
+    HTMLTableSectionElement,
+    React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+    <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+))
+TableHeader.displayName = "TableHeader"
+
+const TableBody = React.forwardRef<
+    HTMLTableSectionElement,
+    React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+    <tbody
+        ref={ref}
+        className={cn("[&_tr:last-child]:border-0", className)}
+        {...props}
+    />
+))
+TableBody.displayName = "TableBody"
+
+const TableFooter = React.forwardRef<
+    HTMLTableSectionElement,
+    React.HTMLAttributes<HTMLTableSectionElement>
+>(({ className, ...props }, ref) => (
+    <tfoot
+        ref={ref}
+        className={cn(
+            "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+            className
+        )}
+        {...props}
+    />
+))
+TableFooter.displayName = "TableFooter"
+
+const TableRow = React.forwardRef<
+    HTMLTableRowElement,
+    React.HTMLAttributes<HTMLTableRowElement>
+>(({ className, ...props }, ref) => (
+    <tr
+        ref={ref}
+        className={cn(
+            "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+            className
+        )}
+        {...props}
+    />
+))
+TableRow.displayName = "TableRow"
+
+const TableHead = React.forwardRef<
+    HTMLTableCellElement,
+    React.ThHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => (
+    <th
+        ref={ref}
+        className={cn(
+            "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+            className
+        )}
+        {...props}
+    />
+))
+TableHead.displayName = "TableHead"
+
+const TableCell = React.forwardRef<
+    HTMLTableCellElement,
+    React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => (
+    <td
+        ref={ref}
+        className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+        {...props}
+    />
+))
+TableCell.displayName = "TableCell"
+
+const TableCaption = React.forwardRef<
+    HTMLTableCaptionElement,
+    React.HTMLAttributes<HTMLTableCaptionElement>
+>(({ className, ...props }, ref) => (
+    <caption
+        ref={ref}
+        className={cn("mt-4 text-sm text-muted-foreground", className)}
+        {...props}
+    />
+))
+TableCaption.displayName = "TableCaption"
+
+export {
+    Table,
+    TableHeader,
+    TableBody,
+    TableFooter,
+    TableHead,
+    TableRow,
+    TableCell,
+    TableCaption,
+}
+====================
+// Файл: frontend/src/components/ui/button.tsx
+====================
+
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    {
+        variants: {
+            variant: {
+                default: "bg-primary text-primary-foreground hover:bg-primary/90",
+                destructive:
+                    "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                outline:
+                    "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                secondary:
+                    "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                ghost: "hover:bg-accent hover:text-accent-foreground",
+                link: "text-primary underline-offset-4 hover:underline",
+            },
+            size: {
+                default: "h-10 px-4 py-2",
+                sm: "h-9 rounded-md px-3",
+                lg: "h-11 rounded-md px-8",
+                icon: "h-10 w-10",
+            },
+        },
+        defaultVariants: {
+            variant: "default",
+            size: "default",
+        },
+    }
+)
+
+export interface ButtonProps
+    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+        VariantProps<typeof buttonVariants> {
+    asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+    ({ className, variant, size, asChild = false, ...props }, ref) => {
+        const Comp = asChild ? Slot : "button"
+        return (
+            <Comp
+                className={cn(buttonVariants({ variant, size, className }))}
+                ref={ref}
+                {...props}
+            />
+        )
+    }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+====================
+// Файл: frontend/src/components/ui/dropdown-menu.tsx
+====================
+
+"use client"
+
+import * as React from "react"
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { Check, ChevronRight, Circle } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const DropdownMenu = DropdownMenuPrimitive.Root
+
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
+
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal
+
+const DropdownMenuSub = DropdownMenuPrimitive.Sub
+
+const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
+
+const DropdownMenuSubTrigger = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+    inset?: boolean
+}
+>(({ className, inset, children, ...props }, ref) => (
+    <DropdownMenuPrimitive.SubTrigger
+        ref={ref}
+        className={cn(
+            "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+            inset && "pl-8",
+            className
+        )}
+        {...props}
+    >
+        {children}
+        <ChevronRight className="ml-auto h-4 w-4" />
+    </DropdownMenuPrimitive.SubTrigger>
+))
+DropdownMenuSubTrigger.displayName =
+    DropdownMenuPrimitive.SubTrigger.displayName
+
+const DropdownMenuSubContent = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
+>(({ className, ...props }, ref) => (
+    <DropdownMenuPrimitive.SubContent
+        ref={ref}
+        className={cn(
+            "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            className
+        )}
+        {...props}
+    />
+))
+DropdownMenuSubContent.displayName =
+    DropdownMenuPrimitive.SubContent.displayName
+
+const DropdownMenuContent = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Content>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+    <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+            ref={ref}
+            sideOffset={sideOffset}
+            className={cn(
+                "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+                className
+            )}
+            {...props}
+        />
+    </DropdownMenuPrimitive.Portal>
+))
+DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
+
+const DropdownMenuItem = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean
+}
+>(({ className, inset, ...props }, ref) => (
+    <DropdownMenuPrimitive.Item
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            inset && "pl-8",
+            className
+        )}
+        {...props}
+    />
+))
+DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
+
+const DropdownMenuCheckboxItem = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
+>(({ className, children, checked, ...props }, ref) => (
+    <DropdownMenuPrimitive.CheckboxItem
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            className
+        )}
+        checked={checked}
+        {...props}
+    >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Check className="h-4 w-4" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+        {children}
+    </DropdownMenuPrimitive.CheckboxItem>
+))
+DropdownMenuCheckboxItem.displayName =
+    DropdownMenuPrimitive.CheckboxItem.displayName
+
+const DropdownMenuRadioItem = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
+>(({ className, children, ...props }, ref) => (
+    <DropdownMenuPrimitive.RadioItem
+        ref={ref}
+        className={cn(
+            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            className
+        )}
+        {...props}
+    >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Circle className="h-2 w-2 fill-current" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+        {children}
+    </DropdownMenuPrimitive.RadioItem>
+))
+DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
+
+const DropdownMenuLabel = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean
+}
+>(({ className, inset, ...props }, ref) => (
+    <DropdownMenuPrimitive.Label
+        ref={ref}
+        className={cn(
+            "px-2 py-1.5 text-sm font-semibold",
+            inset && "pl-8",
+            className
+        )}
+        {...props}
+    />
+))
+DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName
+
+const DropdownMenuSeparator = React.forwardRef<
+    React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
+    React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+    <DropdownMenuPrimitive.Separator
+        ref={ref}
+        className={cn("-mx-1 my-1 h-px bg-muted", className)}
+        {...props}
+    />
+))
+DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
+
+const DropdownMenuShortcut = ({
+                                  className,
+                                  ...props
+                              }: React.HTMLAttributes<HTMLSpanElement>) => {
+    return (
+        <span
+            className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
+            {...props}
+        />
+    )
+}
+DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
+
+export {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuCheckboxItem,
+    DropdownMenuRadioItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuGroup,
+    DropdownMenuPortal,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuRadioGroup,
+}
+
+====================
+// Файл: frontend/src/components/ui/input.tsx
+====================
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Input }
+
+====================
+// Файл: frontend/src/lib/utils.ts
+====================
+
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+====================
+// Файл: frontend/src/lib/api.ts
+====================
+
+// src/lib/api.ts
+
+// Імітуємо затримку мережі
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Мокові дані
+const MOCK_CHALLENGE_DETAILS = {
+    id: '1',
+    title: "Predictive Maintenance Analysis",
+    metric: "ROC-AUC",
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Дедлайн через 3 дні
+    description: "The goal of this challenge is to predict equipment failure based on sensor data. Participants will build a binary classification model. The dataset contains anonymized sensor readings and maintenance history for a fleet of industrial machines. Your task is to predict the probability of failure within the next operational cycle.",
+    rules: "Submissions must be a CSV file with two columns: 'id' and 'probability'. The file must contain predictions for all IDs present in test.csv. Maximum 5 submissions per day.",
+    dataAssets: [
+        { name: 'train.csv', size: '24.5 MB' },
+        { name: 'test.csv', size: '8.2 MB' },
+        { name: 'sample_submission.csv', size: '1.1 MB' },
+    ],
+    userSubmissions: [
+        { id: 'sub-001', submittedAt: new Date().toISOString(), status: 'Scored', score: 0.8923 },
+        { id: 'sub-002', submittedAt: new Date().toISOString(), status: 'Processing', score: null },
+        { id: 'sub-003', submittedAt: new Date().toISOString(), status: 'Error', score: null },
+    ],
+};
+
+export const getChallengeDetails = async (challengeId: string) => {
+    console.log(`Fetching details for challenge ${challengeId}...`);
+    await sleep(500); // Імітація завантаження
+    return MOCK_CHALLENGE_DETAILS;
+};
+====================
+// Файл: frontend/src/pages/RegisterPage.tsx
+====================
+
+function RegisterPage() {
+    return (
+        <div className="mx-auto max-w-6xl px-8 py-16 md:py-24 text-center">
+            <h1 className="text-5xl font-medium">Register</h1>
+            <p className="mt-4 text-muted-foreground">This page will contain the registration form.</p>
+        </div>
+    );
+}
+
+export default RegisterPage;
+====================
+// Файл: frontend/src/pages/LeaderboardPage.tsx
+====================
+
+function LeaderboardPage() {
+    return (
+        <div className="mx-auto max-w-6xl px-8 py-16 md:py-24 text-center">
+            <h1 className="text-5xl font-medium">Leaderboard</h1>
+            <p className="mt-4 text-muted-foreground">This page will display the leaderboard.</p>
+        </div>
+    );
+}
+
+export default LeaderboardPage;
+====================
+// Файл: frontend/src/pages/LoginPage.tsx
+====================
+
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ROUTES } from '@/router/paths';
+
+function LoginPage() {
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const from = location.state?.from?.pathname || ROUTES.HOME;
+
+    const handleLogin = () => {
+        login('Team Alpha'); // Симулюємо логін
+        navigate(from, { replace: true });
+    };
+
+    return (
+        <div className="mx-auto max-w-md px-8 py-16 md:py-24 text-center">
+            <h1 className="text-5xl font-medium">Login</h1>
+            <p className="mt-4 text-muted-foreground">This is a demo login.</p>
+            <Button onClick={handleLogin} className="mt-6">
+                Log in as Team Alpha
+            </Button>
+        </div>
+    );
+}
+
+export default LoginPage;
+
+====================
+// Файл: frontend/src/pages/ChallengesListPage.tsx
+====================
+
+import { ArrowRight } from "lucide-react";
+
+const challenges = [
+    { id: '1', title: "Predictive Maintenance Analysis", description: "Analyze sensor data to predict equipment failure. The primary evaluation metric is ROC-AUC.", category: "DATA MODELING" },
+    { id: '2', title: "Customer Churn Prediction", description: "Build a model to identify customers likely to churn. The goal is to maximize the F1 Score.", category: "CLASSIFICATION" },
+    { id: '3', title: "Global Stock Market Forecasting", description: "Develop a time-series model to predict stock prices using historical data. Evaluation is based on RMSE.", category: "FINANCIAL ANALYSIS" },
+];
+
+function ChallengesListPage() {
+    return (
+        <div className="mx-auto max-w-6xl px-8 py-16 md:py-24">
+            <section className="text-center mb-24">
+                <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground">
+                    Continuous engagement.
+                </h2>
+                <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground/70">
+                    Exceptional results.
+                </h2>
+            </section>
+
+            <section className="grid grid-cols-1 gap-16 md:grid-cols-3">
+                {challenges.map((challenge) => (
+                    <div key={challenge.id} className="text-center md:text-left">
+                        <p className="mb-2 text-sm font-semibold tracking-wider text-primary uppercase">
+                            {challenge.category}
+                        </p>
+                        <h3 className="mb-3 text-3xl font-medium tracking-tight">
+                            {challenge.title}
+                        </h3>
+                        <p className="mb-4 text-muted-foreground">
+                            {challenge.description}
+                        </p>
+                        <a href={`/challenges/${challenge.id}`} className="inline-flex items-center font-semibold text-primary transition-all hover:translate-x-1">
+                            View Challenge
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </a>
+                    </div>
+                ))}
+            </section>
+        </div>
+    );
+}
+
+export default ChallengesListPage;
+====================
+// Файл: frontend/src/pages/ChallengeDetailsPage.tsx
+====================
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Download, Upload } from 'lucide-react';
+import { SubmissionDialog } from '@/components/SubmissionDialog';
+
+// Мокові дані, щоб сторінка працювала без бекенду
+const MOCK_CHALLENGE_DETAILS = {
+    id: '1',
+    title: "Predictive Maintenance Analysis",
+    metric: "ROC-AUC",
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    description: "The goal of this challenge is to predict equipment failure based on sensor data. Participants will build a binary classification model. The dataset contains anonymized sensor readings and maintenance history for a fleet of industrial machines. Your task is to predict the probability of failure within the next operational cycle.",
+    rules: "Submissions must be a CSV file with two columns: 'id' and 'probability'. The file must contain predictions for all IDs present in test.csv. Maximum 5 submissions per day.",
+    dataAssets: [
+        { name: 'train.csv', size: '24.5 MB' },
+        { name: 'test.csv', size: '8.2 MB' },
+        { name: 'sample_submission.csv', size: '1.1 MB' },
+    ],
+    userSubmissions: [
+        { id: 'sub-001', submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), status: 'Scored', score: 0.8923 },
+        { id: 'sub-002', submittedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), status: 'Processing', score: null },
+        { id: 'sub-003', submittedAt: new Date(Date.now() - 0.5 * 60 * 60 * 1000).toISOString(), status: 'Error', score: null },
+    ],
+};
+
+type ChallengeDetails = typeof MOCK_CHALLENGE_DETAILS;
+
+function ChallengeDetailsPage() {
+    const { challengeId } = useParams<{ challengeId: string }>();
+    const [challenge, setChallenge] = useState<ChallengeDetails | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    useEffect(() => {
+        const fetchChallenge = async () => {
+            setIsLoading(true);
+            // Імітуємо завантаження даних
+            await new Promise(resolve => setTimeout(resolve, 500));
+            setChallenge(MOCK_CHALLENGE_DETAILS);
+            setIsLoading(false);
+        };
+
+        fetchChallenge();
+    }, [challengeId]);
+
+    if (isLoading) {
+        return <div className="text-center py-24 text-muted-foreground">Loading challenge details...</div>;
+    }
+
+    if (!challenge) {
+        return <div className="text-center py-24 text-destructive">Failed to load challenge.</div>;
+    }
+
+    const timeRemaining = new Date(challenge.deadline).toLocaleDateString("en-US", { day: 'numeric', month: 'long', year: 'numeric' });
+
+    return (
+        <>
+            <div className="mx-auto max-w-6xl px-8 py-12 md:py-16">
+                <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
+                    <div>
+                        <h1 className="text-4xl md:text-5xl font-medium tracking-tight">{challenge.title}</h1>
+                        <p className="mt-2 text-lg text-muted-foreground">
+                            Metric: <span className="font-semibold text-primary">{challenge.metric}</span> • Deadline: {timeRemaining}
+                        </p>
+                    </div>
+                    <Button size="lg" onClick={() => setIsDialogOpen(true)}>
+                        <Upload className="mr-2 h-5 w-5" />
+                        Make Submission
+                    </Button>
+                </div>
+
+                <Tabs defaultValue="overview" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="overview">Overview</TabsTrigger>
+                        <TabsTrigger value="data">Data</TabsTrigger>
+                        <TabsTrigger value="submissions">My Submissions</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="overview" className="prose prose-sm md:prose-base dark:prose-invert max-w-none mt-6">
+                        <p>{challenge.description}</p>
+                        <h3 className="font-serif">Rules</h3>
+                        <p>{challenge.rules}</p>
+                    </TabsContent>
+                    <TabsContent value="data" className="mt-6">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>File Name</TableHead>
+                                    <TableHead>Size</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {challenge.dataAssets.map(asset => (
+                                    <TableRow key={asset.name}>
+                                        <TableCell className="font-medium">{asset.name}</TableCell>
+                                        <TableCell>{asset.size}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm" asChild>
+                                                <a href={`/path/to/${asset.name}`} download><Download className="mr-2 h-4 w-4" /> Download</a>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TabsContent>
+                    <TabsContent value="submissions" className="mt-6">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Submission ID</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Score</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {challenge.userSubmissions.map(sub => (
+                                    <TableRow key={sub.id}>
+                                        <TableCell className="font-mono text-xs">{sub.id}</TableCell>
+                                        <TableCell>{new Date(sub.submittedAt).toLocaleString()}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={sub.status === 'Scored' ? 'default' : sub.status === 'Error' ? 'destructive' : 'secondary'}>
+                                                {sub.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right font-medium">{sub.score ? sub.score.toFixed(4) : 'N/A'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            <SubmissionDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                challengeTitle={challenge.title}
+            />
+        </>
+    );
+}
+
+export default ChallengeDetailsPage;
+
+====================
+// Файл: frontend/src/pages/NotFoundPage.tsx
+====================
+
+function NotFoundPage() {
+    return (
+        <div className="mx-auto max-w-6xl px-8 py-16 md:py-24 text-center">
+            <h1 className="text-9xl font-bold text-primary">404</h1>
+            <h2 className="mt-4 text-3xl font-medium">Page Not Found</h2>
+            <p className="mt-4 text-muted-foreground">Sorry, the page you are looking for does not exist.</p>
+            <a href="/" className="mt-6 inline-block rounded bg-primary px-6 py-3 text-primary-foreground">
+                Go Back Home
+            </a>
+        </div>
+    );
+}
+
+export default NotFoundPage;
+====================
+// Файл: frontend/src/router/index.tsx
+====================
+
+import { createBrowserRouter, type RouteObject } from 'react-router-dom';
+import AppLayout from '@/App'; // App.tsx тепер буде нашим лейаутом
+import ChallengesListPage from '@/pages/ChallengesListPage';
+import ChallengeDetailsPage from '@/pages/ChallengeDetailsPage';
+import LeaderboardPage from '@/pages/LeaderboardPage';
+import LoginPage from '@/pages/LoginPage';
+import RegisterPage from '@/pages/RegisterPage';
+import NotFoundPage from '@/pages/NotFoundPage';
+import ProtectedRoute from './ProtectedRoute';
+import { ROUTES } from './paths';
+
+const routes: RouteObject[] = [
+    {
+        element: <AppLayout />,
+        children: [
+            {
+                path: ROUTES.HOME,
+                element: <ChallengesListPage />,
+            },
+            {
+                path: ROUTES.LOGIN,
+                element: <LoginPage />,
+            },
+            {
+                path: ROUTES.REGISTER,
+                element: <RegisterPage />,
+            },
+            // Protected Routes
+            {
+                element: <ProtectedRoute />,
+                children: [
+                    {
+                        path: ROUTES.LEADERBOARD,
+                        element: <LeaderboardPage />,
+                    },
+                    {
+                        // Використовуємо функцію для створення динамічного шляху
+                        path: ROUTES.CHALLENGE_DETAILS(':challengeId'),
+                        element: <ChallengeDetailsPage />,
+                    },
+                ],
+            },
+            {
+                path: '*',
+                element: <NotFoundPage />,
+            },
+        ],
+    },
+];
+
+export const router = createBrowserRouter(routes);
+====================
+// Файл: frontend/src/router/ProtectedRoute.tsx
+====================
+
+import {Navigate, Outlet, useLocation} from 'react-router-dom';
+import {useAuth} from '@/contexts/AuthContext';
+import {ROUTES} from './paths';
+
+function ProtectedRoute() {
+    const {isAuthenticated} = useAuth();
+    const location = useLocation();
+    if (!isAuthenticated) {
+        return <Navigate to={ROUTES.LOGIN} replace state={{from: location}}/>;
+    }
+    return <Outlet/>;
+}
+
+export default ProtectedRoute;
+====================
+// Файл: frontend/src/router/paths.ts
+====================
+
+export const ROUTES = {
+    HOME: '/',
+    LOGIN: '/login',
+    REGISTER: '/register',
+    LEADERBOARD: '/leaderboard',
+    // Для динамічних шляхів створюємо функцію
+    CHALLENGE_DETAILS: (challengeId: string | number) => `/challenges/${challengeId}`,
+};
+====================
+// Файл: backend-worker/package.json
+====================
+
+{
+  "name": "backend-worker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.3",
+    "mongoose": "^8.19.4",
+    "ws": "^8.18.3"
+  }
+}
+
+====================
+// Файл: backend-worker/src/services/db.js
+====================
+
+const mongoose = require("mongoose");
+
+async function connectDB() {
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log("[Worker] Connected to MongoDB");
+    } catch (err) {
+        console.error("[Worker] Mongo error:", err);
+        process.exit(1);
+    }
+}
+
+module.exports = connectDB;
+
+====================
+// Файл: backend-worker/src/services/index.js
+====================
+
+import { connectDB } from "./services/db.js";
+import { startQueueListener } from "./services/queueService.js";
+
+const start = async () => {
+    await connectDB();
+    startQueueListener();
+};
+
+start();
+
+====================
+// Файл: backend-worker/src/services/scoringService.js
+====================
+
+
+====================
+// Файл: backend-worker/src/services/queueService.js
+====================
+
+import axios from "axios";
+import dotenv from "dotenv";
+import { scoreSubmission } from "./scoringService.js";
+
+dotenv.config();
+
+const CORE_API = process.env.CORE_API;
+const WORKER_SECRET = process.env.WORKER_SECRET;
+
+export const startQueueListener = () => {
+    console.log("Queue listener started...");
+
+    setInterval(async () => {
+        try {
+            const next = await getNextPendingSubmission();
+            if (next) {
+                console.log("⚙️ Found submission:", next._id);
+                await processSubmission(next);
+            }
+        } catch (err) {
+            console.error("Queue listener error:", err.message);
+        }
+    }, 5000);
+};
+
+async function getNextPendingSubmission() {
+    try {
+        const response = await axios.get(`${CORE_API}/api/internal/submissions/next`, {
+            headers: {
+                "X-WORKER-TOKEN": WORKER_SECRET
+            }
+        });
+
+        if (!response.data) return null;
+        return response.data;
+
+    } catch (err) {
+        if (err.response?.status === 404) {
+            return null;
+        }
+        console.error("Error fetching next submission:", err.message);
+        return null;
+    }
+}
+
+async function processSubmission(submission) {
+    try {
+        const score = await scoreSubmission(submission);
+
+        console.log("🎯 Score calculated:", score);
+
+        await axios.post(
+            `${CORE_API}/api/internal/submissions/${submission._id}/result`,
+            {
+                status: "DONE",
+                score: score
+            },
+            {
+                headers: {
+                    "X-WORKER-TOKEN": WORKER_SECRET
+                }
+            }
+        );
+
+        console.log("📨 Result sent to backend-core");
+
+    } catch (err) {
+        console.error("❌ Scoring failed:", err);
+
+        await axios.post(
+            `${CORE_API}/api/internal/submissions/${submission._id}/result`,
+            {
+                status: "FAILED",
+                errorMessage: err.message || "Unknown error"
+            },
+            {
+                headers: {
+                    "X-WORKER-TOKEN": WORKER_SECRET
+                }
+            }
+        );
+    }
+}
+
+====================
+// Файл: backend-core/pom.xml
+====================
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.7</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>myApp</groupId>
+    <artifactId>backend-core</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>backend-core</name>
+
+    <properties>
+        <java.version>25</java.version>
+        <!-- keep jjwt version central -->
+        <jjwt.version>0.11.5</jjwt.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring / Mongo / Web / Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Devtools -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Tests -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JJWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Commons-codec for SHA1 hashing -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+
+        <!-- (Optional) Apache Commons IO if you want extra file utilities later -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.14.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Compiler plugin: set release to 25 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>25</release>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <!-- Spring Boot plugin -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+====================
+// Файл: backend-core/HELP.md
+====================
+
+# Getting Started
+
+### Reference Documentation
+
+For further reference, please consider the following sections:
+
+* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
+* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/3.5.7/maven-plugin)
+* [Create an OCI image](https://docs.spring.io/spring-boot/3.5.7/maven-plugin/build-image.html)
+* [Spring Data MongoDB](https://docs.spring.io/spring-boot/3.5.7/reference/data/nosql.html#data.nosql.mongodb)
+* [Spring Boot DevTools](https://docs.spring.io/spring-boot/3.5.7/reference/using/devtools.html)
+* [Spring Security](https://docs.spring.io/spring-boot/3.5.7/reference/web/spring-security.html)
+* [Validation](https://docs.spring.io/spring-boot/3.5.7/reference/io/validation.html)
+* [Spring Web](https://docs.spring.io/spring-boot/3.5.7/reference/web/servlet.html)
+
+### Guides
+
+The following guides illustrate how to use some features concretely:
+
+* [Accessing Data with MongoDB](https://spring.io/guides/gs/accessing-data-mongodb/)
+* [Securing a Web Application](https://spring.io/guides/gs/securing-web/)
+* [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/)
+* [Authenticating a User with LDAP](https://spring.io/guides/gs/authenticating-ldap/)
+* [Validation](https://spring.io/guides/gs/validating-form-input/)
+* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
+* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
+* [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
+
+### Maven Parent overrides
+
+Due to Maven's design, elements are inherited from the parent POM to the project POM.
+While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the
+parent.
+To prevent this, the project POM contains empty overrides for these elements.
+If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
+
+
+====================
+// Файл: backend-core/docker-compose.yml
+====================
+
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: hackathon-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: hackathondb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo-data:
+====================
+// Файл: backend-core/.mvn/wrapper/maven-wrapper.properties
+====================
+
+wrapperVersion=3.3.4
+distributionType=only-script
+distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip
+
+====================
+// Файл: backend-core/src/test/java/myapp/backendcore/BackendCoreApplicationTests.java
+====================
+
+package myapp.backendcore;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class BackendCoreApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+
+}
+
+====================
+// Файл: backend-core/src/main/resources/application.properties
+====================
+
+# application.properties
+spring.application.name=backend-core
+server.port=8080
+
+# MongoDB - local dev
+spring.data.mongodb.uri=mongodb://localhost:27017/hackathondb
+
+# Hackathon settings
+hackathon.jwt.secret=change-this-secret-in-prod
+hackathon.jwt.expiration-ms=3600000
+hackathon.storage.upload-dir=./uploads
+hackathon.max-file-size-bytes=52428800  # 50 MB
+
+# Logging
+logging.level.org.springframework=INFO
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/BackendCoreApplication.java
+====================
+
+package myapp.backendcore;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class BackendCoreApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(BackendCoreApplication.class, args);
+    }
+
+}
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeResponse.java
+====================
+
+package myapp.backendcore.dto;
+
+import myapp.backendcore.model.ChallengeStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ChallengeResponse {
+
+    private String id;
+
+    private String title;
+
+    private String description;
+
+    private ChallengeStatus status;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/RegisterRequest.java
+====================
+
+package myapp.backendcore.dto;
+
+import lombok.Data;
+
+@Data
+public class RegisterRequest {
+    private String email;
+    private String password;
+    private String displayName;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/SubmissionResultDto.java
+====================
+
+package myapp.backendcore.dto;
+
+import lombok.Data;
+
+@Data
+public class SubmissionResultDto {
+    private String status;       // "DONE" or "FAILED"
+    private Double score;        // may be null if failed
+    private String errorMessage; // worker error or null
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/AuthResponse.java
+====================
+
+package myapp.backendcore.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+public class AuthResponse {
+    private String token;
+    private String userId;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/LoginRequest.java
+====================
+
+package myapp.backendcore.dto;
+
+import lombok.Data;
+
+@Data
+public class LoginRequest {
+    private String email;
+    private String password;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeCreateRequest.java
+====================
+
+package myapp.backendcore.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import myapp.backendcore.model.ChallengeStatus;
+
+import java.util.Optional;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChallengeCreateRequest {
+
+    @NotBlank
+    private String title;
+
+    @Size(max = 2000)
+    private String description;
+
+    private Optional<ChallengeStatus> status;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeUpdateRequest.java
+====================
+
+package myapp.backendcore.dto;
+
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import myapp.backendcore.model.ChallengeStatus;
+
+import java.util.Optional;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChallengeUpdateRequest {
+
+    private String title;
+
+    @Size(max = 2000)
+    private String description;
+
+    private Optional<ChallengeStatus> status;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/ChallengeResponse.java
+====================
+
+package myapp.backendcore.repository;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import myapp.backendcore.model.ChallengeStatus;
+
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChallengeResponse {
+
+    private String id;
+    private String title;
+    private String description;
+    private ChallengeStatus status;
+    private Instant createdAt;
+    private Instant updatedAt;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/ChallengeRepository.java
+====================
+
+package myapp.backendcore.repository;
+
+import myapp.backendcore.model.Challenge;
+import myapp.backendcore.model.ChallengeStatus;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.List;
+
+public interface ChallengeRepository extends MongoRepository<Challenge, String> {
+    List<Challenge> findByStatus(ChallengeStatus status);
+}
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/SubmissionRepository.java
+====================
+
+package myapp.backendcore.repository;
+
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.SubmissionStatus;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.List;
+
+public interface SubmissionRepository extends MongoRepository<Submission, String> {
+    List<Submission> findByStatus(SubmissionStatus status);
+    boolean existsBySubmissionHash(String submissionHash);
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/UserRepository.java
+====================
+
+package myapp.backendcore.repository;
+
+import myapp.backendcore.model.User;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.Optional;
+
+public interface UserRepository extends MongoRepository<User, String> {
+    Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/config/SecurityConfig.java
+====================
+
+package myapp.backendcore.config;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.security.JwtAuthenticationFilter;
+import org.springframework.context.annotation.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.*;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtFilter;
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/internal/**").authenticated()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/security/JwtUtil.java
+====================
+
+package myapp.backendcore.security;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import myapp.backendcore.model.User;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.security.Key;
+import java.util.Date;
+
+@Component
+public class JwtUtil {
+
+    @Value("${hackathon.jwt.secret}")
+    private String secret;
+
+    @Value("${hackathon.jwt.expiration-ms}")
+    private long expirationMs;
+
+    private Key signingKey;
+
+    @PostConstruct
+    public void init() {
+        signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    public String generateToken(User user) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expirationMs);
+
+        return Jwts.builder()
+                .setSubject(user.getId()) // userId
+                .claim("email", user.getEmail())
+                .claim("roles", user.getRoles())
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(signingKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public Claims extractClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/security/JwtAuthenticationFilter.java
+====================
+
+package myapp.backendcore.security;
+
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.*;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtUtil jwtUtil;
+//    private final UserDetailsServiceImpl userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain)
+            throws ServletException, IOException {
+
+        String header = request.getHeader("Authorization");
+
+        if (header != null && header.startsWith("Bearer ")) {
+
+            String token = header.substring(7);
+
+            try {
+                Claims claims = jwtUtil.extractClaims(token);
+
+                String email = claims.get("email", String.class);
+                List<String> roles = claims.get("roles", List.class);
+
+                var authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
+                Authentication auth = new UsernamePasswordAuthenticationToken(
+                        email, null, authorities
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+            } catch (Exception ex) {
+                // If token invalid → ignore, request will be unauthorized later
+            }
+        }
+
+        chain.doFilter(request, response);
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/security/UserDetailsServiceImpl.java
+====================
+
+package myapp.backendcore.security;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.repository.UserRepository;
+import org.springframework.security.core.userdetails.*;
+import org.springframework.stereotype.Service;
+import myapp.backendcore.model.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements org.springframework.security.core.userdetails.UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) {
+        User u = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(u.getEmail())                // use username/email
+                .password(u.getPasswordHash())             // encoded password
+                .authorities(u.getRoles().stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList()))
+                .build();
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/InternalSubmissionController.java
+====================
+
+package myapp.backendcore.controller;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.dto.SubmissionResultDto;
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.SubmissionStatus;
+import myapp.backendcore.service.SubmissionService;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/internal/submissions")
+@RequiredArgsConstructor
+public class InternalSubmissionController {
+
+    private final SubmissionService submissionService;
+
+    // Worker picks next submission
+    @GetMapping("/next")
+    public ResponseEntity<?> getNextPendingSubmission() {
+
+        var pendingOpt = submissionService.fetchNextPending();
+
+        if (pendingOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build(); // nothing to process
+        }
+
+        Submission s = submissionService.markAsProcessing(pendingOpt.get());
+        return ResponseEntity.ok(s);
+    }
+
+    // Worker sends back final score
+    @PostMapping("/{id}/result")
+    public ResponseEntity<?> postResult(
+            @PathVariable String id,
+            @RequestBody SubmissionResultDto dto
+    ) {
+        try {
+            SubmissionStatus status;
+
+            if ("DONE".equalsIgnoreCase(dto.getStatus())) {
+                status = SubmissionStatus.DONE;
+            } else {
+                status = SubmissionStatus.FAILED;
+            }
+
+            Submission updated = submissionService.updateSubmissionResult(
+                    id,
+                    status,
+                    dto.getScore(),
+                    dto.getErrorMessage()
+            );
+
+            return ResponseEntity.ok(updated);
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        }
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/AdminChallengeController.java
+====================
+
+package myapp.backendcore.controller;
+
+import myapp.backendcore.dto.ChallengeCreateRequest;
+import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeUpdateRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.service.ChallengeService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/challenges")
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
+public class AdminChallengeController {
+
+    private final ChallengeService challengeService;
+
+    @PostMapping
+    public ResponseEntity<ChallengeResponse> createChallenge(
+            @Valid @RequestBody ChallengeCreateRequest request
+    ) {
+        ChallengeResponse response = challengeService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ChallengeResponse> updateChallenge(
+            @PathVariable String id,
+            @Valid @RequestBody ChallengeUpdateRequest request
+    ) {
+        ChallengeResponse response = challengeService.update(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ChallengeResponse> getChallenge(
+            @PathVariable String id
+    ) {
+        ChallengeResponse response = challengeService.getById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ChallengeResponse>> getAllChallenges() {
+        List<ChallengeResponse> responses = challengeService.getAll();
+        return ResponseEntity.ok(responses);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteChallenge(
+            @PathVariable String id
+    ) {
+        challengeService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/AuthController.java
+====================
+
+package myapp.backendcore.controller;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.dto.AuthResponse;
+import myapp.backendcore.dto.LoginRequest;
+import myapp.backendcore.dto.RegisterRequest;
+import myapp.backendcore.model.User;
+import myapp.backendcore.service.AuthService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+        try {
+            User newUser = authService.register(req.getEmail(), req.getPassword(), req.getDisplayName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+        try {
+            String token = authService.login(req.getEmail(), req.getPassword());
+            String userId = authService.userRepository.findByEmail(req.getEmail()).get().getId();
+            return ResponseEntity.ok(new AuthResponse(token, userId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+        }
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/SubmissionController.java
+====================
+
+package myapp.backendcore.controller;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.repository.UserRepository;
+import myapp.backendcore.service.SubmissionService;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api")
+public class SubmissionController {
+
+    private final SubmissionService submissionService;
+    private final UserRepository userRepository;
+
+    @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> submit(
+            @RequestParam("challengeId") String challengeId,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        try {
+            String userEmail = authentication.getName();
+
+            var user = userRepository.findByEmail(userEmail).orElseThrow();
+
+            Submission submission = submissionService.createSubmission(
+                    user.getId(),
+                    challengeId,
+                    file
+            );
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(submission);
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error");
+        }
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/ChallengeStatus.java
+====================
+
+package myapp.backendcore.model;
+
+public enum ChallengeStatus {
+    OPEN,
+    CLOSED
+}
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/Submission.java
+====================
+
+package myapp.backendcore.model;
+
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "submissions")
+public class Submission {
+
+    @Id
+    private String id;
+
+    private String userId;
+    private String challengeId;
+
+    private String filename;          // stored filename on disk
+    private String originalFilename;
+
+    private long fileSize;
+
+    private SubmissionStatus status;
+
+    private Double score;             // null until processed
+    private String errorMessage;
+
+    private String submissionHash;    // SHA1 for duplicate detection
+
+    private Instant createdAt;
+    private Instant updatedAt;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/SubmissionStatus.java
+====================
+
+package myapp.backendcore.model;
+
+public enum SubmissionStatus {
+    PENDING,
+    PROCESSING,
+    DONE,
+    FAILED,
+    REJECTED
+}
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/User.java
+====================
+
+package myapp.backendcore.model;
+
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Set;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "users")
+public class User {
+
+    @Id
+    private String id;
+
+    private String email;
+
+    private String passwordHash;
+
+    private String displayName;
+
+    private Set<String> roles; // e.g. ROLE_USER, ROLE_ADMIN
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/Challenge.java
+====================
+
+package myapp.backendcore.model;
+
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "challenges")
+public class Challenge {
+
+    @Id
+    private String id;
+    private String title;
+    private String description;
+    private ChallengeStatus status = ChallengeStatus.OPEN;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+}
+
+
+//🔍 Why “Document” and not “Entity”?
+//        •	In MongoDB, the term is document, not entity.
+//        •	MongoDB stores data as BSON documents (similar to JSON).
+//        •	Spring Boot maps a “document” class to a MongoDB collection.
+//
+//So:
+//        •	In SQL → you have entities, tables
+//	•	In Mongo → you have documents, collections
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/service/ChallengeService.java
+====================
+
+package myapp.backendcore.service;
+
+import myapp.backendcore.dto.ChallengeCreateRequest;
+import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeUpdateRequest;
+import myapp.backendcore.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.Challenge;
+import myapp.backendcore.model.ChallengeStatus;
+import myapp.backendcore.repository.ChallengeRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ChallengeService {
+
+    private final ChallengeRepository challengeRepository;
+
+    public ChallengeResponse create(ChallengeCreateRequest request) {
+        Instant now = Instant.now();
+
+        ChallengeStatus status = request.getStatus().orElse(ChallengeStatus.OPEN);
+
+        Challenge challenge = Challenge.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .status(status)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        Challenge saved = challengeRepository.save(challenge);
+        return toResponse(saved);
+    }
+
+    public ChallengeResponse update(String id, ChallengeUpdateRequest request) {
+        Challenge existing = challengeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+
+        // Update only non-null fields
+        if (request.getTitle() != null) {
+            existing.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            existing.setDescription(request.getDescription());
+        }
+        if (request.getStatus().isPresent()) {
+            existing.setStatus(request.getStatus().get());
+        }
+
+        existing.setUpdatedAt(Instant.now());
+
+        Challenge saved = challengeRepository.save(existing);
+        return toResponse(saved);
+    }
+
+    public ChallengeResponse getById(String id) {
+        Challenge challenge = challengeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+        return toResponse(challenge);
+    }
+
+    public List<ChallengeResponse> getAll() {
+        return challengeRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public void delete(String id) {
+        Challenge existing = challengeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+        challengeRepository.delete(existing);
+    }
+
+    // ─────────────────────────────
+    // Mapping helper
+    // ─────────────────────────────
+    private ChallengeResponse toResponse(Challenge challenge) {
+        return ChallengeResponse.builder()
+                .id(challenge.getId())
+                .title(challenge.getTitle())
+                .description(challenge.getDescription())
+                .status(challenge.getStatus())
+                .createdAt(challenge.getCreatedAt())
+                .updatedAt(challenge.getUpdatedAt())
+                .build();
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/service/AuthService.java
+====================
+
+package myapp.backendcore.service;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.User;
+import myapp.backendcore.repository.UserRepository;
+import myapp.backendcore.security.JwtUtil;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.Set;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    public final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    public User register(String email, String password, String displayName) {
+
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email already registered");
+        }
+
+        User user = User.builder()
+                .email(email)
+                .passwordHash(encoder.encode(password))
+                .displayName(displayName)
+                .roles(Set.of("ROLE_USER"))
+                .build();
+
+        return userRepository.save(user);
+    }
+
+    public String login(String email, String password) {
+        var u = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+
+        if (!encoder.matches(password, u.getPasswordHash())) {
+            throw new IllegalArgumentException("Invalid credentials");
+        }
+
+        return jwtUtil.generateToken(u);
+    }
+
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/service/SubmissionService.java
+====================
+
+package myapp.backendcore.service;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.SubmissionStatus;
+import myapp.backendcore.repository.SubmissionRepository;
+import myapp.backendcore.repository.UserRepository;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.nio.file.*;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class SubmissionService {
+
+    private final SubmissionRepository submissionRepository;
+    private final UserRepository userRepository;
+
+    @Value("${hackathon.storage.upload-dir}")
+    private String uploadDir;
+
+    public Submission createSubmission(String userId, String challengeId, MultipartFile file) throws Exception {
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File cannot be empty");
+        }
+
+        // Ensure directory exists
+        Files.createDirectories(Paths.get(uploadDir));
+
+        // Compute SHA1 (anti-cheating)
+        String sha1;
+        try (InputStream in = file.getInputStream()) {
+            sha1 = DigestUtils.sha1Hex(in);
+        }
+
+        // Check duplicate
+        if (submissionRepository.existsBySubmissionHash(sha1)) {
+            throw new IllegalArgumentException("Duplicate submission detected");
+        }
+
+        // Store file with safe name
+        String storedName = Instant.now().toEpochMilli() + "-" +
+                file.getOriginalFilename().replaceAll("\\s+", "_");
+
+        Path dest = Paths.get(uploadDir).resolve(storedName);
+
+        try (InputStream in = file.getInputStream()) {
+            Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        Submission submission = Submission.builder()
+                .userId(userId)
+                .challengeId(challengeId)
+                .filename(storedName)
+                .originalFilename(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .status(SubmissionStatus.PENDING)
+                .submissionHash(sha1)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        return submissionRepository.save(submission);
+    }
+
+    public Optional<Submission> fetchNextPending() {
+        return submissionRepository.findByStatus(SubmissionStatus.PENDING)
+                .stream()
+                .sorted(Comparator.comparing(Submission::getCreatedAt))
+                .findFirst();
+    }
+
+    public Submission markAsProcessing(Submission s) {
+        s.setStatus(SubmissionStatus.PROCESSING);
+        s.setUpdatedAt(Instant.now());
+        return submissionRepository.save(s);
+    }
+
+    public Submission updateSubmissionResult(String id, SubmissionStatus status, Double score, String errorMessage) {
+        Submission s = submissionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+
+        s.setStatus(status);
+        s.setScore(score);
+        s.setErrorMessage(errorMessage);
+        s.setUpdatedAt(Instant.now());
+
+        return submissionRepository.save(s);
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/exception/ResourceNotFoundException.java
+====================
+
+package myapp.backendcore.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+
+    public ResourceNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/exception/GlobalExceptionHandler.java
+====================
+
+package myapp.backendcore.exception;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // ─────────────────────────────────────────────────────────────
+    // 404 – Resource Not Found
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(
+            ResourceNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 400 – Validation errors (DTO field errors)
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Validation Failed");
+
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(err ->
+                fieldErrors.put(err.getField(), err.getDefaultMessage())
+        );
+
+        body.put("messages", fieldErrors);
+        body.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    // For validator-based validation on query params / path params
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 403 – Access denied (not ADMIN)
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.FORBIDDEN, "Access denied", request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 500 – Generic unexpected error (fallback)
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneric(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Helper builder for error responses
+    // ─────────────────────────────────────────────────────────────
+    private ResponseEntity<Map<String, Object>> buildError(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        body.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(status).body(body);
+    }
+}
+    we are on hackaton right now you are a professional full stack software enginner; we workr in a team of 4 people be sure to note different parts of our app; do the best; easy working solutions, dont add unnecessary things
+
+нижче текст нашого завдання:
+
+WARSAW HACKATHON 2025
+Hackathon Management Platform
+Problem Statement
+As aspiring and creative engineers, you are tasked with designing and implementing a Hackathon Platform that allows users to participate in data modeling challenges. The platform's primary purpose is to enable users to participate in data challenges, covering team implementation, dataset management, solution submission, and evaluation. The goal is to create a user-friendly and efficient platform that supports the entire lifecycle of a hackathon.
+Brief Context
+Hackathons are most engaging when the underlying infrastructure is seamless, allowing participants to focus entirely on solving the problem. Organizers require a platform that is easy to set up, secure with data, and transparent to participants. Teams in a real-world competition determined by scoring, accuracy matters, a clean user experience, and fast troubleshooting under time pressure. The platform should be user-friendly and efficient, supporting the entire lifecycle of a data-modeling hackathon.
+Challenges Proposals
+Challenge Catalog: Provide a centralized catalog of available challenges. Each challenge should have a title, a detailed description, specific rules, the primary evaluation metric (such as ROC-AUC or RMSE), the submission deadline in UTC, and associated assets.
+Challenge Assets & Data Distribution: Provide sample datasets (such as train.csv, test.csv, sample_submission.csv) in JSON or Parquet formats with integrity checks (sizes, schemas, optional checksums) and rate limits. Include input and output examples demonstrating the expected solution format and data structure.
+Solution Submission Pipeline: Develop an user interface (UI) and an /api/submit endpoint. The system should validate the submission and only order or submitted files, support various file types (for example, CSV, JSON, Python scripts, model files), and reject malformed files with actionable error messages.
+Scoring Service: Implement an automated service to compute a deterministic score against a hidden ground-truth dataset. Persist the score, timestamps, submission hash, and audit metadata. Track each team's best score.
+Leaderboard: Display a live ranking of participants based on their scores. Implement tie-breakers, such as the earliest timestamp of a team's best score. Include options for public/private leaderboard toggles (for example, a hold-out split for final ranking).
+User Authentication & Roles: Implement simple registration and login (such as email and password, OAuth, or a developer mode). Define and manage roles for participants, administrators and judges.
+Admin Console: Provide a comprehensive admin interface to create, read, update, and delete (CRUD) challenges, including their metrics, deadlines, and rules. Enable dataset uploads, freeze/unfreeze submission capabilities, and export final results. Provide administrative oversight features for participant accounts and permissions. Implement manual review capabilities for complex submissions requiring human judgment (for example, innovation or code-quality aspects not covered by automated scoring).
+Operational Safety: Incorporate essential security measures such as file size caps, MIME type checks, storage outside the web root, rate-limiting, and basic input sanitation. The Minimum Viable Product (MVP) should explicitly prohibit arbitrary code execution.
+Observability: Ensure clear logging, request and score audit trails, and fast health checks to monitor platform status.
+Reproducibility: The platform should be easily deployable with a one-command launch (such as docker-compose up or a single script). Include seeded randomness where applicable and a smoke dataset for continuous integration (CI) testing.
+Fair Play: Implement basic anti-cheating measures, such as duplicate detection via hash, row-count checks, suspicious scoring logs, and submission cooldown periods.
+Error Experience: Design helpful inputs, states and provide actionable error messages that guide users on how to fix issues (like wrong columns, NaNs or extra rows).
+Performance & Concurrency: Ensure non-blocking scoring (for example, using background jobs/queues) that can work with file sizes up to 100 MB without timing out.
+Documentation: Provide a concise README with setup steps, an architecture sketch, and troubleshooting tips.
+Summary
+These examples represent key problems and building blocks for your Hackathon Management Platform. Feel free to innovate beyond these suggestions. The goal is to craft a platform that members can win ownership, and participants will enjoy using, fostering a user-friendly and efficient experience throughout the entire hackathon lifecycle.
+Speak with our mentors! They are happy to share real-world constraints and edge cases that matter in competition.
+Keep in mind the important aspects:
+Reproducibility & Reliability: Ensure deterministic scoring and a one-command setup on a clean machine.
+Security & Data Privacy: Implement safe file handling and clear rules; avoid Personally Identifiable Information (PII) and arbitrary code execution in the MVP.
+User Experience: To enjoy taking part in the hackathon and focus on the challenge rather than understanding the platform.
+Evaluation Criteria
+These criteria will be used to select winning projects (each criterium is worth up to 10 points):
+Implementation of Key Features: Assess the completeness, robustness, and reliability of core functionalities.
+UI/UX: Evaluate the intuitiveness of the design, ease of navigation, aesthetic appeal, and overall user satisfaction for both participants and administrators.
+Presentation: Judge the clarity, professionalism, and effectiveness of the platform's demonstration and documentation.
+Additional Features: Consider the value, creativity, and successful implementation of any features beyond the core requirements that enhance the platform's utility or user experience.
+Flexibility: Evaluate the versatility and efficiency in handling various data types and formats required for diverse data modeling challenges.
+Submission
+Create Video: Each team must prepare a video of up to five minutes that explains and showcases its solution.
+If you used AI tools (e.g., Copilot, Claude) during development, share how you used them and how you addressed security and privacy concerns.
+If your solution incorporates AI to improve the user experience of your platform, discuss any trade-offs or limitations it introduces.
+Upload your video: The video should be uploaded to Lockbox under a directory named with the team's name. We recommend you to submit also other resources, such as a text file with a link to a Git repository or a demo application.
+After the first round, judges will select the top three teams to present live in the finals, followed by a Q&A session.
+Good luck and have fun!
+
+
+стак нашого проекту: реакт, нодж джс, монго, джава спрінг бут;
+стиль сайту як голдмен сакс; уважно дивись, що до чого;
