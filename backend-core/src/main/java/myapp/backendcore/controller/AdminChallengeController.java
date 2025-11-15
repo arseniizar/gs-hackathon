@@ -2,6 +2,7 @@ package myapp.backendcore.controller;
 
 import myapp.backendcore.dto.ChallengeCreateRequest;
 import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeSaveRequest;
 import myapp.backendcore.dto.ChallengeUpdateRequest;
 import jakarta.validation.Valid;
 import myapp.backendcore.service.ChallengeService;
@@ -25,7 +26,7 @@ public class AdminChallengeController {
 
     @PostMapping
     public ResponseEntity<ChallengeResponse> createChallenge(
-            @Valid @RequestBody ChallengeCreateRequest request
+            @Valid @RequestBody ChallengeSaveRequest request // 👈 Use the new DTO
     ) {
         ChallengeResponse response = challengeService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -34,7 +35,7 @@ public class AdminChallengeController {
     @PutMapping("/{id}")
     public ResponseEntity<ChallengeResponse> updateChallenge(
             @PathVariable String id,
-            @Valid @RequestBody ChallengeUpdateRequest request
+            @Valid @RequestBody ChallengeSaveRequest request // 👈 Use the new DTO
     ) {
         ChallengeResponse response = challengeService.update(id, request);
         return ResponseEntity.ok(response);

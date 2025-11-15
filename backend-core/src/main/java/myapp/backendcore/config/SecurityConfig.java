@@ -33,15 +33,23 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Дозволяємо Swagger UI
+                        // Swagger UI
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                        // Дозволяємо всі запити до /api/auth/**
+
+                        // Authentication endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Дозволяємо GET запити до челенджів
+
+                        // 👇 ЗМІНА: Дозволяємо публічний доступ до внутрішніх ендпоінтів для воркера.
+                        // Безпека забезпечується перевіркою X-WORKER-TOKEN всередині контролера.
+                        .requestMatchers("/api/internal/**").permitAll()
+
+                        // Public GET requests to challenges
                         .requestMatchers(HttpMethod.GET, "/api/challenges", "/api/challenges/**").permitAll()
-                        // Всі інші запити до /api/** потребують аутентифікації
+
+                        // Всі інші запити до /api/** потребують аутентифікації (JWT)
                         .requestMatchers("/api/**").authenticated()
-                        // Всі інші запити (не /api) дозволені (наприклад, для React Router)
+
+                        // Всі інші запити (не /api) дозволені
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

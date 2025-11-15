@@ -105,6 +105,11 @@ export const adminDeleteChallenge = async (id: string) => {
     await apiClient.delete(`/admin/challenges/${id}`);
 };
 
+export const getSubmissionDetails = async (submissionId: string) => {
+    const response = await apiClient.get(`/submissions/${submissionId}`);
+    return response.data;
+};
+
 
 // --- ADMIN: USER MANAGEMENT ---
 export const adminGetAllUsers = async () => {

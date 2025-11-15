@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { adminCreateChallenge, adminUpdateChallenge, getChallengeDetails } from '@/lib/api';
 import { ROUTES } from '@/router/paths';
 import { ArrowLeft } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
     <textarea
@@ -30,6 +31,7 @@ function AdminChallengeEditPage() {
     });
     const [isLoading, setIsLoading] = useState(isEditing);
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isEditing && challengeId) {
@@ -58,6 +60,7 @@ function AdminChallengeEditPage() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+        setError(null);
         try {
             const dataToSave = {
                 ...formState,
@@ -70,9 +73,9 @@ function AdminChallengeEditPage() {
                 await adminCreateChallenge(dataToSave);
             }
             navigate(ROUTES.ADMIN);
-        } catch (error) {
-            console.error("Failed to save challenge", error);
-            alert("An error occurred while saving. Please check the console.");
+        } catch (err: any) {
+            console.error("Failed to save challenge", err);
+            setError(err.response?.data?.message || "An unexpected error occurred. Please try again.");
         } finally {
             setIsSaving(false);
         }
@@ -89,52 +92,68 @@ function AdminChallengeEditPage() {
     }
 
     return (
-        <div className="mx-auto max-w-4xl px-8 py-16">
-            <Link to={ROUTES.ADMIN} className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground mb-8">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Admin Console
-            </Link>
+        <>
+            <div className="mx-auto max-w-4xl px-8 py-16">
+                <Link to={ROUTES.ADMIN} className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground mb-8">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Admin Console
+                </Link>
 
-            <h1 className="text-4xl font-medium font-serif tracking-tight mb-8">
-                {isEditing ? 'Edit Challenge' : 'Create New Challenge'}
-            </h1>
+                <h1 className="text-4xl font-medium font-serif tracking-tight mb-8">
+                    {isEditing ? 'Edit Challenge' : 'Create New Challenge'}
+                </h1>
 
-            <form onSubmit={handleSave} className="space-y-6">
-                <div className="grid gap-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input id="title" value={formState.title} onChange={handleChange} required placeholder="e.g., Customer Churn Prediction" />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="description">Description (Markdown supported)</Label>
-                    <Textarea id="description" value={formState.description} onChange={handleChange} required rows={6} placeholder="Detailed problem statement..." />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="rules">Rules</Label>
-                    <Textarea id="rules" value={formState.rules} onChange={handleChange} rows={4} placeholder="e.g., 1. No external data..." />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <form onSubmit={handleSave} className="space-y-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="metric">Metric</Label>
-                        <Input id="metric" value={formState.metric} onChange={handleChange} required placeholder="e.g., ROC-AUC" />
+                        <Label htmlFor="title">Title</Label>
+                        <Input id="title" value={formState.title} onChange={handleChange} required placeholder="e.g., Customer Churn Prediction" />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="status">Status</Label>
-                        <select id="status" value={formState.status} onChange={handleChange} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm">
-                            <option value="OPEN">OPEN</option>
-                            <option value="CLOSED">CLOSED</option>
-                        </select>
+                        <Label htmlFor="description">Description (Markdown supported)</Label>
+                        <Textarea id="description" value={formState.description} onChange={handleChange} required rows={6} placeholder="Detailed problem statement..." />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="deadline">Deadline (UTC)</Label>
-                        <Input id="deadline" type="datetime-local" value={formState.deadline} onChange={handleChange} />
+                        <Label htmlFor="rules">Rules</Label>
+                        <Textarea id="rules" value={formState.rules} onChange={handleChange} rows={4} placeholder="e.g., 1. No external data..." />
                     </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => navigate(ROUTES.ADMIN)}>Cancel</Button>
-                    <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Challenge'}</Button>
-                </div>
-            </form>
-        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid gap-2">
+                            <Label htmlFor="metric">Metric</Label>
+                            <Input id="metric" value={formState.metric} onChange={handleChange} required placeholder="e.g., ROC-AUC" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="status">Status</Label>
+                            <select id="status" value={formState.status} onChange={handleChange} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                <option value="OPEN">OPEN</option>
+                                <option value="CLOSED">CLOSED</option>
+                            </select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="deadline">Deadline (UTC)</Label>
+                            <Input id="deadline" type="datetime-local" value={formState.deadline} onChange={handleChange} />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button type="button" variant="outline" onClick={() => navigate(ROUTES.ADMIN)}>Cancel</Button>
+                        <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Challenge'}</Button>
+                    </div>
+                </form>
+            </div>
+
+            <Dialog open={!!error} onOpenChange={() => setError(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-destructive">Save Failed</DialogTitle>
+                        <DialogDescription>
+                            {error}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end pt-2">
+                        <Button variant="outline" onClick={() => setError(null)}>Close</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

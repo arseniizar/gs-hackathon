@@ -4,6 +4,7 @@ import { Button } from './components/ui/button';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { ROUTES } from './router/paths';
 import { useAuth } from './contexts/AuthContext';
+import { Toaster } from './components/ui/toaster'; // 👈 ДОДАЙТЕ ІМПОРТ
 
 function AppLayout() {
     const { isAuthenticated, teamName, logout, isAdmin, isProfileComplete } = useAuth();
@@ -30,7 +31,6 @@ function AppLayout() {
                 <div className="flex items-center gap-2">
                     {isAuthenticated ? (
                         <>
-                            {/* 👇 ЗМІНА: Робимо ім'я команди посиланням на профіль */}
                             <Button variant="ghost" asChild>
                                 <Link to={ROUTES.TEAM_PROFILE}>{teamName || "Set Up Profile"}</Link>
                             </Button>
@@ -55,6 +55,8 @@ function AppLayout() {
             <main>
                 <Outlet />
             </main>
+
+            <Toaster />
         </div>
     );
 }

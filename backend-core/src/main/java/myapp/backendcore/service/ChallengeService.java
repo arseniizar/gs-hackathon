@@ -2,12 +2,14 @@ package myapp.backendcore.service;
 
 import myapp.backendcore.dto.ChallengeCreateRequest;
 import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeSaveRequest;
 import myapp.backendcore.dto.ChallengeUpdateRequest;
 import myapp.backendcore.exception.ResourceNotFoundException;
 import myapp.backendcore.model.Challenge;
 import myapp.backendcore.model.ChallengeStatus;
 import myapp.backendcore.repository.ChallengeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,46 +26,51 @@ public class ChallengeService {
     // ─────────────────────────────────────────────────────────────
     // CREATE
     // ─────────────────────────────────────────────────────────────
-    public ChallengeResponse create(ChallengeCreateRequest req) {
+    public ChallengeResponse create(ChallengeSaveRequest req) {
+        Challenge challenge = new Challenge();
+        challenge.setTitle(req.getTitle());
+        challenge.setDescription(req.getDescription());
+        challenge.setMetric(req.getMetric());
+        challenge.setRules(req.getRules());
 
-        Challenge challenge = Challenge.builder()
-                .title(req.getTitle())
-                .description(req.getDescription())
-                .metric(req.getMetric())
-                .status(ChallengeStatus.OPEN)     // always OPEN on create
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
+        // Handle deadline
+        if (StringUtils.hasText(req.getDeadline())) {
+            challenge.setDeadline(Instant.parse(req.getDeadline()));
+        }
+
+        challenge.setStatus(ChallengeStatus.OPEN); // Always OPEN on create
+        challenge.setCreatedAt(Instant.now());
+        challenge.setUpdatedAt(Instant.now());
 
         return toResponse(challengeRepository.save(challenge));
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // UPDATE
-    // ─────────────────────────────────────────────────────────────
-    public ChallengeResponse update(String id, ChallengeUpdateRequest req) {
-
+    public ChallengeResponse update(String id, ChallengeSaveRequest req) {
         Challenge challenge = challengeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
 
-        // Update BASIC fields
         challenge.setTitle(req.getTitle());
         challenge.setDescription(req.getDescription());
         challenge.setMetric(req.getMetric());
+        challenge.setRules(req.getRules());
 
-        // Validate and update STATUS
-        try {
-            ChallengeStatus newStatus =
-                    ChallengeStatus.valueOf(req.getStatus().trim().toUpperCase());
+        // Handle deadline
+        if (StringUtils.hasText(req.getDeadline())) {
+            challenge.setDeadline(Instant.parse(req.getDeadline()));
+        } else {
+            challenge.setDeadline(null);
+        }
 
-            challenge.setStatus(newStatus);
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid status: " + req.getStatus());
+        // Handle status
+        if (StringUtils.hasText(req.getStatus())) {
+            try {
+                challenge.setStatus(ChallengeStatus.valueOf(req.getStatus().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // Keep old status if new one is invalid
+            }
         }
 
         challenge.setUpdatedAt(Instant.now());
-
         return toResponse(challengeRepository.save(challenge));
     }
 
