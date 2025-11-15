@@ -221,8 +221,10 @@ export default defineConfig([
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
     "@tailwindcss/vite": "^4.1.17",
+    "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.553.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -353,12 +355,12 @@ export default defineConfig({
 import { Link, Outlet } from 'react-router-dom';
 import { ThemeToggle } from './components/theme-toggle';
 import { Button } from './components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { ROUTES } from './router/paths';
 import { useAuth } from './contexts/AuthContext';
 
 function AppLayout() {
-    const { isAuthenticated, teamName, logout } = useAuth();
+    const { isAuthenticated, teamName, logout, isAdmin } = useAuth();
 
     return (
         <div className="min-h-screen w-full bg-background text-foreground font-sans">
@@ -370,7 +372,12 @@ function AppLayout() {
                     <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/70">
                         <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
                         <Link to={ROUTES.LEADERBOARD} className="transition-colors hover:text-foreground">Leaderboard</Link>
-                        <a href="#" className="transition-colors hover:text-foreground">Docs</a>
+                        {isAdmin && (
+                            <Link to={ROUTES.ADMIN} className="flex items-center gap-1 font-semibold text-primary transition-colors hover:text-foreground">
+                                <ShieldCheck className="h-4 w-4" />
+                                Admin
+                            </Link>
+                        )}
                     </nav>
                 </div>
                 <div className="flex items-center gap-2">
@@ -570,33 +577,78 @@ createRoot(document.getElementById('root')!).render(
 // Файл: frontend/src/contexts/AuthContext.tsx
 ====================
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { jwtDecode } from 'jwt-decode';
+import { loginUser } from '@/lib/api';
+
+interface DecodedToken {
+    email: string;
+    roles: string[];
+    exp: number;
+}
 
 interface AuthContextType {
     isAuthenticated: boolean;
-    login: (teamName: string) => void;
-    logout: () => void;
+    isAdmin: boolean;
     teamName: string | null;
+    login: (credentials: object) => Promise<void>;
+    logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
     const [teamName, setTeamName] = useState<string | null>(null);
-    const isAuthenticated = !!teamName;
 
-    const login = (name: string) => {
-        setTeamName(name);
-        // В реальному додатку тут буде запит до API та збереження токену
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            try {
+                const decodedToken: DecodedToken = jwtDecode(token);
+                if (decodedToken.exp * 1000 > Date.now()) {
+                    setIsAuthenticated(true);
+                    setIsAdmin(decodedToken.roles.includes('ROLE_ADMIN'));
+                    setTeamName(decodedToken.email);
+                } else {
+                    localStorage.removeItem('authToken');
+                }
+            } catch (error) {
+                console.error("Failed to decode token on initial load", error);
+                localStorage.removeItem('authToken');
+            }
+        }
+    }, []);
+
+    const login = async (credentials: object) => {
+        try {
+            const data = await loginUser(credentials);
+            const token = data.token;
+            localStorage.setItem('authToken', token);
+            const decodedToken: DecodedToken = jwtDecode(token);
+            setIsAuthenticated(true);
+            setIsAdmin(decodedToken.roles.includes('ROLE_ADMIN'));
+            setTeamName(decodedToken.email);
+        } catch (error) {
+            console.error("Login failed:", error);
+            // Clear any partial state and re-throw for the UI component to handle
+            logout();
+            throw error;
+        }
     };
 
     const logout = () => {
+        localStorage.removeItem('authToken');
+        setIsAuthenticated(false);
+        setIsAdmin(false);
         setTeamName(null);
-        // В реальному додатку тут буде видалення токену
     };
 
+    const value = { isAuthenticated, isAdmin, teamName, login, logout };
+
     return (
-        <AuthContext.Provider value={{ isAuthenticated, teamName, login, logout }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
@@ -609,6 +661,7 @@ export function useAuth() {
     }
     return context;
 }
+
 ====================
 // Файл: frontend/src/components/theme-provider.tsx
 ====================
@@ -1623,49 +1676,186 @@ export function cn(...inputs: ClassValue[]) {
 ====================
 
 // src/lib/api.ts
+import axios from 'axios';
 
-// Імітуємо затримку мережі
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// The base URL for our Spring Boot backend.
+// In a real app, this would come from an environment variable.
+const API_URL = 'http://localhost:8080/api';
 
-// Мокові дані
-const MOCK_CHALLENGE_DETAILS = {
-    id: '1',
-    title: "Predictive Maintenance Analysis",
-    metric: "ROC-AUC",
-    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Дедлайн через 3 дні
-    description: "The goal of this challenge is to predict equipment failure based on sensor data. Participants will build a binary classification model. The dataset contains anonymized sensor readings and maintenance history for a fleet of industrial machines. Your task is to predict the probability of failure within the next operational cycle.",
-    rules: "Submissions must be a CSV file with two columns: 'id' and 'probability'. The file must contain predictions for all IDs present in test.csv. Maximum 5 submissions per day.",
-    dataAssets: [
-        { name: 'train.csv', size: '24.5 MB' },
-        { name: 'test.csv', size: '8.2 MB' },
-        { name: 'sample_submission.csv', size: '1.1 MB' },
-    ],
-    userSubmissions: [
-        { id: 'sub-001', submittedAt: new Date().toISOString(), status: 'Scored', score: 0.8923 },
-        { id: 'sub-002', submittedAt: new Date().toISOString(), status: 'Processing', score: null },
-        { id: 'sub-003', submittedAt: new Date().toISOString(), status: 'Error', score: null },
-    ],
+const apiClient = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Axios interceptor to add the JWT token to every secure request
+apiClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
+});
+
+
+// --- AUTHENTICATION ---
+export const loginUser = async (credentials: object) => {
+    const response = await apiClient.post('/auth/login', credentials);
+    return response.data; // Expected: { token, userId }
+};
+
+export const registerUser = async (userData: object) => {
+    const response = await apiClient.post('/auth/register', userData);
+    return response.data;
+};
+
+
+// --- PUBLIC CHALLENGES ---
+export const getChallenges = async () => {
+    const response = await apiClient.get('/challenges');
+    return response.data;
 };
 
 export const getChallengeDetails = async (challengeId: string) => {
-    console.log(`Fetching details for challenge ${challengeId}...`);
-    await sleep(500); // Імітація завантаження
-    return MOCK_CHALLENGE_DETAILS;
+    const response = await apiClient.get(`/challenges/${challengeId}`);
+    return response.data;
 };
+
+
+// --- ADMIN: CHALLENGE MANAGEMENT ---
+export const adminGetAllChallenges = async () => {
+    const response = await apiClient.get('/admin/challenges');
+    return response.data;
+};
+
+export const adminCreateChallenge = async (challengeData: object) => {
+    const response = await apiClient.post('/admin/challenges', challengeData);
+    return response.data;
+};
+
+export const adminUpdateChallenge = async (id: string, challengeData: object) => {
+    const response = await apiClient.put(`/admin/challenges/${id}`, challengeData);
+    return response.data;
+};
+
+export const adminDeleteChallenge = async (id: string) => {
+    await apiClient.delete(`/admin/challenges/${id}`);
+};
+
 ====================
 // Файл: frontend/src/pages/RegisterPage.tsx
 ====================
 
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { registerUser } from '@/lib/api'; // We created this in step 2.1
+import { useNavigate, Link } from 'react-router-dom';
+import { ROUTES } from '@/router/paths';
+
 function RegisterPage() {
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        displayName: ''
+    });
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.id]: e.target.value });
+    };
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        try {
+            await registerUser(formData);
+            // On success, redirect to login
+            navigate(ROUTES.LOGIN);
+        } catch (err: any) {
+            // Check if the error response has a message, otherwise default
+            const msg = err.response?.data || 'Registration failed. Please try again.';
+            setError(typeof msg === 'string' ? msg : 'Registration failed.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
-        <div className="mx-auto max-w-6xl px-8 py-16 md:py-24 text-center">
-            <h1 className="text-5xl font-medium">Register</h1>
-            <p className="mt-4 text-muted-foreground">This page will contain the registration form.</p>
+        <div className="flex items-center justify-center py-24 px-4">
+            <Card className="mx-auto max-w-sm w-full">
+                <CardHeader>
+                    <CardTitle className="text-2xl font-serif">Register Team</CardTitle>
+                    <CardDescription>
+                        Create an account to participate in the Hackathon.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleRegister} className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="displayName">Team / User Name</Label>
+                            <Input
+                                id="displayName"
+                                required
+                                value={formData.displayName}
+                                onChange={handleChange}
+                                disabled={isLoading}
+                                placeholder="Team Alpha"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                required
+                                value={formData.email}
+                                onChange={handleChange}
+                                disabled={isLoading}
+                                placeholder="user@example.com"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                value={formData.password}
+                                onChange={handleChange}
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        {error && <p className="text-sm text-destructive">{error}</p>}
+
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Creating Account...' : 'Create Account'}
+                        </Button>
+                    </form>
+                    <div className="mt-4 text-center text-sm">
+                        Already have an account?{' '}
+                        <Link to={ROUTES.LOGIN} className="underline">
+                            Login
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
 
 export default RegisterPage;
+
 ====================
 // Файл: frontend/src/pages/LeaderboardPage.tsx
 ====================
@@ -1684,30 +1874,87 @@ export default LeaderboardPage;
 // Файл: frontend/src/pages/LoginPage.tsx
 ====================
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ROUTES } from '@/router/paths';
 
 function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const from = location.state?.from?.pathname || ROUTES.HOME;
 
-    const handleLogin = () => {
-        login('Team Alpha'); // Симулюємо логін
-        navigate(from, { replace: true });
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+        try {
+            await login({ email, password });
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError('Invalid credentials. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
-        <div className="mx-auto max-w-md px-8 py-16 md:py-24 text-center">
-            <h1 className="text-5xl font-medium">Login</h1>
-            <p className="mt-4 text-muted-foreground">This is a demo login.</p>
-            <Button onClick={handleLogin} className="mt-6">
-                Log in as Team Alpha
-            </Button>
+        <div className="flex items-center justify-center py-24 px-4">
+            <Card className="mx-auto max-w-sm w-full">
+                <CardHeader>
+                    <CardTitle className="text-2xl font-serif">Login</CardTitle>
+                    <CardDescription>
+                        Enter your email below to login to your account.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleLogin} className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="m@example.com"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={isLoading}
+                            />
+                        </div>
+                        {error && <p className="text-sm text-destructive">{error}</p>}
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Logging in...' : 'Login'}
+                        </Button>
+                    </form>
+                    <div className="mt-4 text-center text-sm">
+                        Don&apos;t have an account?{' '}
+                        <Link to={ROUTES.REGISTER} className="underline">
+                            Sign up
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }
@@ -1715,53 +1962,357 @@ function LoginPage() {
 export default LoginPage;
 
 ====================
+// Файл: frontend/src/pages/AdminPage.tsx
+====================
+
+import { useState, useEffect } from 'react';
+import {
+    adminGetAllChallenges,
+    adminCreateChallenge,
+    adminUpdateChallenge,
+    adminDeleteChallenge
+} from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge'; // 👈 This was missing!
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from '@/components/ui/skeleton';
+import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+
+// Simple Textarea component for the form
+const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+    <textarea
+        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        {...props}
+    />
+);
+
+// --- Sub-component: Form for Create/Edit ---
+interface ChallengeFormProps {
+    challenge: any;
+    onSave: (data: any) => Promise<void>;
+    onCancel: () => void;
+}
+
+const ChallengeForm = ({ challenge, onSave, onCancel }: ChallengeFormProps) => {
+    const [title, setTitle] = useState(challenge?.title || '');
+    const [description, setDescription] = useState(challenge?.description || '');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        await onSave({ title, description });
+        setIsSaving(false);
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <DialogHeader>
+                <DialogTitle className="font-serif text-xl">
+                    {challenge ? 'Edit Challenge' : 'Create New Challenge'}
+                </DialogTitle>
+                <DialogDescription>
+                    Set the core details for this data modeling task.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Input
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                        disabled={isSaving}
+                        placeholder="e.g. Customer Churn Prediction"
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        required
+                        rows={5}
+                        disabled={isSaving}
+                        placeholder="Detailed problem statement..."
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save Challenge'}
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+};
+
+// --- Main Page Component ---
+function AdminPage() {
+    const [challenges, setChallenges] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingChallenge, setEditingChallenge] = useState<any>(null);
+
+    const fetchChallenges = async () => {
+        try {
+            const data = await adminGetAllChallenges();
+            setChallenges(data);
+        } catch (error) {
+            console.error("Failed to fetch challenges", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchChallenges();
+    }, []);
+
+    const handleSaveChallenge = async (challengeData: any) => {
+        try {
+            if (editingChallenge) {
+                await adminUpdateChallenge(editingChallenge.id, challengeData);
+            } else {
+                await adminCreateChallenge(challengeData);
+            }
+            await fetchChallenges();
+            setIsDialogOpen(false); // Close dialog on success
+            setEditingChallenge(null);
+        } catch (error) {
+            console.error("Failed to save challenge", error);
+            alert("Failed to save challenge. Check console for details.");
+        }
+    };
+
+    const handleDeleteChallenge = async (id: string) => {
+        if (window.confirm('Are you sure you want to permanently delete this challenge?')) {
+            try {
+                await adminDeleteChallenge(id);
+                await fetchChallenges();
+            } catch (error) {
+                console.error("Failed to delete challenge", error);
+            }
+        }
+    };
+
+    // Handle opening the dialog for creating (reset state)
+    const openCreateDialog = () => {
+        setEditingChallenge(null);
+        setIsDialogOpen(true);
+    };
+
+    // Handle opening the dialog for editing
+    const openEditDialog = (challenge: any) => {
+        setEditingChallenge(challenge);
+        setIsDialogOpen(true);
+    };
+
+    return (
+        <div className="mx-auto max-w-6xl px-8 py-16">
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-4xl font-medium font-serif tracking-tight">Manage Challenges</h1>
+
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={openCreateDialog}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> New Challenge
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <ChallengeForm
+                            challenge={editingChallenge}
+                            onSave={handleSaveChallenge}
+                            onCancel={() => setIsDialogOpen(false)}
+                        />
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            <div className="rounded-lg border bg-card">
+                {isLoading ? (
+                    <div className="p-6 space-y-4">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                ) : challenges.length === 0 ? (
+                    <div className="p-12 text-center text-muted-foreground">
+                        <p>No challenges found. Create one to get started.</p>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[300px]">Title</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {challenges.map((challenge) => (
+                                <TableRow key={challenge.id}>
+                                    <TableCell className="font-medium font-serif text-lg">
+                                        {challenge.title}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={challenge.status === 'OPEN' ? 'default' : 'secondary'}>
+                                            {challenge.status}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => openEditDialog(challenge)}
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() => handleDeleteChallenge(challenge.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default AdminPage;
+
+====================
 // Файл: frontend/src/pages/ChallengesListPage.tsx
 ====================
 
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight } from "lucide-react";
+import { getChallenges } from '@/lib/api';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ROUTES } from "@/router/paths.ts";
 
-const challenges = [
-    { id: '1', title: "Predictive Maintenance Analysis", description: "Analyze sensor data to predict equipment failure. The primary evaluation metric is ROC-AUC.", category: "DATA MODELING" },
-    { id: '2', title: "Customer Churn Prediction", description: "Build a model to identify customers likely to churn. The goal is to maximize the F1 Score.", category: "CLASSIFICATION" },
-    { id: '3', title: "Global Stock Market Forecasting", description: "Develop a time-series model to predict stock prices using historical data. Evaluation is based on RMSE.", category: "FINANCIAL ANALYSIS" },
-];
+interface Challenge {
+    id: string;
+    title: string;
+    description: string;
+    status: 'OPEN' | 'CLOSED';
+}
+
+function ChallengeCardSkeleton() {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-6 w-2/5" />
+        </div>
+    );
+}
 
 function ChallengesListPage() {
+    const [challenges, setChallenges] = useState<Challenge[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchChallenges = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const data = await getChallenges();
+                setChallenges(data);
+            } catch (error) {
+                console.error("Failed to fetch challenges:", error);
+                setError("Could not load challenges. Please try again later.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchChallenges();
+    }, []);
+
     return (
         <div className="mx-auto max-w-6xl px-8 py-16 md:py-24">
             <section className="text-center mb-24">
-                <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground">
-                    Continuous engagement.
+                <h2 className="text-5xl md:text-7xl font-medium tracking-tighter font-serif">
+                    Continuous Engagement.
                 </h2>
-                <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground/70">
-                    Exceptional results.
+                <h2 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground/70 font-serif">
+                    Exceptional Results.
                 </h2>
             </section>
 
+            {error && <p className="text-center text-destructive">{error}</p>}
+
             <section className="grid grid-cols-1 gap-16 md:grid-cols-3">
-                {challenges.map((challenge) => (
-                    <div key={challenge.id} className="text-center md:text-left">
-                        <p className="mb-2 text-sm font-semibold tracking-wider text-primary uppercase">
-                            {challenge.category}
-                        </p>
-                        <h3 className="mb-3 text-3xl font-medium tracking-tight">
-                            {challenge.title}
-                        </h3>
-                        <p className="mb-4 text-muted-foreground">
-                            {challenge.description}
-                        </p>
-                        <a href={`/challenges/${challenge.id}`} className="inline-flex items-center font-semibold text-primary transition-all hover:translate-x-1">
-                            View Challenge
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </a>
-                    </div>
-                ))}
+                {isLoading ? (
+                    <>
+                        <ChallengeCardSkeleton />
+                        <ChallengeCardSkeleton />
+                        <ChallengeCardSkeleton />
+                    </>
+                ) : (
+                    // --- 3. No more errors here! ---
+                    // TypeScript now correctly infers that 'challenge' is of type 'Challenge'.
+                    challenges.map((challenge) => (
+                        <div key={challenge.id} className="text-center md:text-left">
+                            <p className="mb-2 text-sm font-semibold tracking-wider text-primary uppercase">
+                                {challenge.status === 'OPEN' ? "Active Challenge" : "Challenge Closed"}
+                            </p>
+                            <h3 className="mb-3 text-3xl font-medium tracking-tight font-serif">
+                                {challenge.title}
+                            </h3>
+                            <p className="mb-4 text-muted-foreground">
+                                {challenge.description && challenge.description.length > 150
+                                    ? `${challenge.description.substring(0, 150)}...`
+                                    : challenge.description}
+                            </p>
+                            <Link to={ROUTES.CHALLENGE_DETAILS(challenge.id)} className="inline-flex items-center font-semibold text-primary transition-all hover:translate-x-1">
+                                View Challenge
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </div>
+                    ))
+                )}
             </section>
         </div>
     );
 }
 
 export default ChallengesListPage;
+
 ====================
 // Файл: frontend/src/pages/ChallengeDetailsPage.tsx
 ====================
@@ -1774,6 +2325,14 @@ import {Badge} from "@/components/ui/badge";
 import {Download, Upload} from 'lucide-react';
 import {SubmissionDialog} from '@/components/SubmissionDialog';
 import {Skeleton} from '@/components/ui/skeleton';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 const MOCK_CHALLENGE_DETAILS = {
     id: '1',
@@ -1884,28 +2443,26 @@ function ChallengeDetailsPage() {
                 </div>
 
                 <Tabs defaultValue="overview" className="w-full">
-                    {/* ===== ФІНАЛЬНИЙ СТИЛЬ ТАБІВ, 1 в 1 ЯК У GOLDMAN SACKS ===== */}
-                    <TabsList className="border-b justify-start w-full">
+                    <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">
                         <TabsTrigger
                             value="overview"
-                            className="pb-3 mr-8 -mb-px font-sans text-base font-medium text-muted-foreground border-b-2 border-transparent data-[state=active]:text-foreground data-[state=active]:border-primary"
+                            className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-base font-medium text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground -mb-px mr-8"
                         >
                             Overview
                         </TabsTrigger>
                         <TabsTrigger
                             value="data"
-                            className="pb-3 mr-8 -mb-px font-sans text-base font-medium text-muted-foreground border-b-2 border-transparent data-[state=active]:text-foreground data-[state=active]:border-primary"
+                            className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-base font-medium text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground -mb-px mr-8"
                         >
                             Data
                         </TabsTrigger>
                         <TabsTrigger
                             value="submissions"
-                            className="pb-3 -mb-px font-sans text-base font-medium text-muted-foreground border-b-2 border-transparent data-[state=active]:text-foreground data-[state=active]:border-primary"
+                            className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 text-base font-medium text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground -mb-px"
                         >
                             My Submissions
                         </TabsTrigger>
                     </TabsList>
-                    {/* ===== КІНЕЦЬ СТИЛІВ ===== */}
 
                     <TabsContent value="overview" className="mt-10 space-y-10">
                         <div>
@@ -1919,42 +2476,61 @@ function ChallengeDetailsPage() {
                     </TabsContent>
 
                     <TabsContent value="data" className="mt-10">
-                        <div className="border-t">
-                            {challenge.dataAssets.map(asset => (
-                                <div key={asset.name} className="flex justify-between items-center py-4 border-b">
-                                    <div>
-                                        <p className="font-semibold">{asset.name}</p>
-                                        <p className="text-sm text-muted-foreground">{asset.size}</p>
-                                    </div>
-                                    <Button variant="ghost" asChild>
-                                        <a href={`/path/to/${asset.name}`} download
-                                           className="flex items-center text-sm font-semibold text-primary hover:underline">
-                                            Download <Download className="ml-2 h-4 w-4"/>
-                                        </a>
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>File Name</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {challenge.dataAssets.map(asset => (
+                                    <TableRow key={asset.name}>
+                                        <TableCell>
+                                            <div className="font-medium">{asset.name}</div>
+                                            <div className="text-sm text-muted-foreground">{asset.size}</div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" asChild>
+                                                <a href={`/path/to/${asset.name}`} download className="flex items-center text-sm font-semibold text-primary hover:underline">
+                                                    Download <Download className="ml-2 h-4 w-4"/>
+                                                </a>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </TabsContent>
 
                     <TabsContent value="submissions" className="mt-10">
-                        <div className="border-t">
-                            {challenge.userSubmissions.map(sub => (
-                                <div key={sub.id} className="flex justify-between items-center py-4 border-b">
-                                    <div>
-                                        <p className="font-mono text-sm">{sub.id}</p>
-                                        <p className="text-sm text-muted-foreground">{new Date(sub.submittedAt).toLocaleString()}</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <Badge
-                                            variant={sub.status === 'Scored' ? 'default' : sub.status === 'Error' ? 'destructive' : 'secondary'}>
-                                            {sub.status}
-                                        </Badge>
-                                        <p className="text-right font-semibold w-24">{sub.score ? sub.score.toFixed(4) : 'N/A'}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[300px]">Submission</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Score</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {challenge.userSubmissions.map(sub => (
+                                    <TableRow key={sub.id}>
+                                        <TableCell>
+                                            <div className="font-mono text-sm font-medium">{sub.id}</div>
+                                            <div className="text-sm text-muted-foreground">{new Date(sub.submittedAt).toLocaleString()}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={sub.status === 'Scored' ? 'default' : sub.status === 'Error' ? 'destructive' : 'secondary'}>
+                                                {sub.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono text-sm font-semibold">
+                                            {sub.score ? sub.score.toFixed(4) : 'N/A'}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </TabsContent>
                 </Tabs>
             </div>
@@ -1993,56 +2569,45 @@ export default NotFoundPage;
 ====================
 
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
-import AppLayout from '@/App'; // App.tsx тепер буде нашим лейаутом
+import AppLayout from '@/App';
 import ChallengesListPage from '@/pages/ChallengesListPage';
 import ChallengeDetailsPage from '@/pages/ChallengeDetailsPage';
 import LeaderboardPage from '@/pages/LeaderboardPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import NotFoundPage from '@/pages/NotFoundPage';
+import AdminPage from '@/pages/AdminPage';
 import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute'; // We will create this next
 import { ROUTES } from './paths';
 
 const routes: RouteObject[] = [
     {
         element: <AppLayout />,
         children: [
-            {
-                path: ROUTES.HOME,
-                element: <ChallengesListPage />,
-            },
-            {
-                path: ROUTES.LOGIN,
-                element: <LoginPage />,
-            },
-            {
-                path: ROUTES.REGISTER,
-                element: <RegisterPage />,
-            },
-            // Protected Routes
+            { path: ROUTES.HOME, element: <ChallengesListPage /> },
+            { path: ROUTES.LOGIN, element: <LoginPage /> },
+            { path: ROUTES.REGISTER, element: <RegisterPage /> },
             {
                 element: <ProtectedRoute />,
                 children: [
-                    {
-                        path: ROUTES.LEADERBOARD,
-                        element: <LeaderboardPage />,
-                    },
-                    {
-                        // Використовуємо функцію для створення динамічного шляху
-                        path: ROUTES.CHALLENGE_DETAILS(':challengeId'),
-                        element: <ChallengeDetailsPage />,
-                    },
+                    { path: ROUTES.LEADERBOARD, element: <LeaderboardPage /> },
+                    { path: ROUTES.CHALLENGE_DETAILS(':challengeId'), element: <ChallengeDetailsPage /> },
                 ],
             },
             {
-                path: '*',
-                element: <NotFoundPage />,
+                element: <AdminRoute />, // Protect admin routes
+                children: [
+                    { path: ROUTES.ADMIN, element: <AdminPage /> },
+                ],
             },
+            { path: '*', element: <NotFoundPage /> },
         ],
     },
 ];
 
 export const router = createBrowserRouter(routes);
+
 ====================
 // Файл: frontend/src/router/ProtectedRoute.tsx
 ====================
@@ -2062,6 +2627,30 @@ function ProtectedRoute() {
 
 export default ProtectedRoute;
 ====================
+// Файл: frontend/src/router/AdminRoute.tsx
+====================
+
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from './paths';
+
+function AdminRoute() {
+    const { isAuthenticated, isAdmin } = useAuth();
+    const location = useLocation();
+
+    if (!isAuthenticated) {
+        return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+    }
+
+    if (!isAdmin) {
+        return <Navigate to={ROUTES.HOME} replace />;
+    }
+
+    return <Outlet />;
+}
+
+export default AdminRoute;
+====================
 // Файл: frontend/src/router/paths.ts
 ====================
 
@@ -2070,9 +2659,11 @@ export const ROUTES = {
     LOGIN: '/login',
     REGISTER: '/register',
     LEADERBOARD: '/leaderboard',
-    // Для динамічних шляхів створюємо функцію
+    ADMIN: '/admin', // Add the new admin route
+    // For dynamic paths, create a function
     CHALLENGE_DETAILS: (challengeId: string | number) => `/challenges/${challengeId}`,
 };
+
 ====================
 // Файл: backend-worker/package.json
 ====================
@@ -2179,8 +2770,13 @@ module.exports = connectDB;
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
-        <!-- Devtools -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+      
+      <!-- DevTools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -2352,6 +2948,88 @@ distributionType=only-script
 distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip
 
 ====================
+// Файл: backend-core/src/test/java/myapp/backendcore/AuthControllerTest.java
+====================
+
+package myapp.backendcore;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import myapp.backendcore.dto.LoginRequest;
+import myapp.backendcore.dto.RegisterRequest;
+import myapp.backendcore.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest(properties = "spring.config.name=application-test")
+@AutoConfigureMockMvc
+public class AuthControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper mapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @BeforeEach
+    void cleanDb() {
+        userRepository.deleteAll();
+    }
+
+    @Test
+    void testFirstUserIsAdmin_andSecondIsUser() throws Exception {
+
+        // REGISTER FIRST USER → SHOULD BE ADMIN
+        RegisterRequest reg1 = new RegisterRequest();
+        reg1.setEmail("first@test.com");
+        reg1.setPassword("pass123");
+        reg1.setDisplayName("First User");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(reg1)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.roles", hasSize(2)))
+                .andExpect(jsonPath("$.roles", containsInAnyOrder("ROLE_USER", "ROLE_ADMIN")));
+
+        // REGISTER SECOND USER → SHOULD BE NORMAL USER
+        RegisterRequest reg2 = new RegisterRequest();
+        reg2.setEmail("second@test.com");
+        reg2.setPassword("pass123");
+        reg2.setDisplayName("Second User");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(reg2)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.roles", hasSize(1)))
+                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
+
+        // LOGIN second user → expect token
+        LoginRequest login = new LoginRequest();
+        login.setEmail("second@test.com");
+        login.setPassword("pass123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(login)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
+    }
+}
+====================
 // Файл: backend-core/src/test/java/myapp/backendcore/BackendCoreApplicationTests.java
 ====================
 
@@ -2370,6 +3048,276 @@ class BackendCoreApplicationTests {
 }
 
 ====================
+// Файл: backend-core/src/test/java/myapp/backendcore/SubmissionControllerTest.java
+====================
+
+package myapp.backendcore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import myapp.backendcore.dto.LoginRequest;
+import myapp.backendcore.dto.RegisterRequest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+public class SubmissionControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper mapper;
+
+    @Test
+    void testSubmissionFlow() throws Exception {
+
+        // 1. Register user
+        RegisterRequest reg = new RegisterRequest();
+        reg.setEmail("submit@test.com");
+        reg.setPassword("123456");
+        reg.setDisplayName("SubmitUser");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(reg)))
+                .andExpect(status().isCreated());
+
+        // 2. Login user
+        LoginRequest login = new LoginRequest();
+        login.setEmail("submit@test.com");
+        login.setPassword("123456");
+
+        String loginRes = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(login)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String token = mapper.readTree(loginRes).get("token").asText();
+
+        // 3. Submit file
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.csv",
+                "text/csv",
+                "col1,col2\n1,2\n".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/submit")
+                        .file(file)
+                        .param("challengeId", "dummy-challenge")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+}
+====================
+// Файл: backend-core/src/test/java/myapp/backendcore/ChallengeServiceTest.java
+====================
+
+package myapp.backendcore;
+
+import myapp.backendcore.dto.ChallengeCreateRequest;
+import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeUpdateRequest;
+import myapp.backendcore.exception.ResourceNotFoundException;
+import myapp.backendcore.model.Challenge;
+import myapp.backendcore.model.ChallengeStatus;
+import myapp.backendcore.repository.ChallengeRepository;
+import myapp.backendcore.service.ChallengeService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ChallengeServiceTest {
+
+    @Mock
+    private ChallengeRepository challengeRepository;
+
+    @InjectMocks
+    private ChallengeService challengeService;
+
+    @BeforeEach
+    void setUp() {
+        // nothing for now
+    }
+
+    @Test
+    void create_shouldSaveChallengeWithDefaultOpenStatus_WhenStatusIsNull() {
+        // given
+        ChallengeCreateRequest request = new ChallengeCreateRequest();
+        request.setTitle("Test Challenge");
+        request.setDescription("Description");
+        request.setStatus(null); // simulate not provided
+
+        // we capture the entity passed to repo
+        ArgumentCaptor<Challenge> challengeCaptor = ArgumentCaptor.forClass(Challenge.class);
+
+        Challenge saved = Challenge.builder()
+                .id("123")
+                .title("Test Challenge")
+                .description("Description")
+                .status(ChallengeStatus.OPEN)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(challengeRepository.save(any(Challenge.class))).thenReturn(saved);
+
+        // when
+        ChallengeResponse response = challengeService.create(request);
+
+        // then
+        verify(challengeRepository).save(challengeCaptor.capture());
+        Challenge toSave = challengeCaptor.getValue();
+
+        assertThat(toSave.getStatus()).isEqualTo(ChallengeStatus.OPEN);
+        assertThat(toSave.getCreatedAt()).isNotNull();
+        assertThat(toSave.getUpdatedAt()).isNotNull();
+
+        assertThat(response.getId()).isEqualTo("123");
+        assertThat(response.getTitle()).isEqualTo("Test Challenge");
+        assertThat(response.getStatus()).isEqualTo(ChallengeStatus.OPEN);
+    }
+
+    @Test
+    void update_shouldUpdateNonNullFields() {
+        // given
+        String id = "123";
+        Challenge existing = Challenge.builder()
+                .id(id)
+                .title("Old title")
+                .description("Old desc")
+                .status(ChallengeStatus.OPEN)
+                .createdAt(Instant.now().minusSeconds(3600))
+                .updatedAt(Instant.now().minusSeconds(3600))
+                .build();
+
+        when(challengeRepository.findById(id)).thenReturn(Optional.of(existing));
+
+        ChallengeUpdateRequest request = new ChallengeUpdateRequest();
+        request.setTitle("New title");
+        request.setDescription(null); // do not change
+        request.setStatus(Optional.of(ChallengeStatus.CLOSED));
+
+        when(challengeRepository.save(any(Challenge.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        ChallengeResponse response = challengeService.update(id, request);
+
+        // then
+        assertThat(response.getTitle()).isEqualTo("New title");
+        assertThat(response.getStatus()).isEqualTo(ChallengeStatus.CLOSED);
+        assertThat(response.getDescription()).isEqualTo("Old desc"); // unchanged
+        assertThat(response.getUpdatedAt()).isNotNull();
+
+        verify(challengeRepository).save(any(Challenge.class));
+    }
+
+    @Test
+    void getById_shouldThrow_WhenChallengeNotFound() {
+        // given
+        String id = "missing";
+        when(challengeRepository.findById(id)).thenReturn(Optional.empty());
+
+        // when / then
+        assertThatThrownBy(() -> challengeService.getById(id))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Challenge not found");
+    }
+
+    @Test
+    void getAll_shouldReturnMappedResponses() {
+        // given
+        Challenge c1 = Challenge.builder()
+                .id("1")
+                .title("C1")
+                .description("D1")
+                .status(ChallengeStatus.OPEN)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        Challenge c2 = Challenge.builder()
+                .id("2")
+                .title("C2")
+                .description("D2")
+                .status(ChallengeStatus.CLOSED)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(challengeRepository.findAll()).thenReturn(List.of(c1, c2));
+
+        // when
+        List<ChallengeResponse> responses = challengeService.getAll();
+
+        // then
+        assertThat(responses).hasSize(2);
+        assertThat(responses.get(0).getId()).isEqualTo("1");
+        assertThat(responses.get(1).getId()).isEqualTo("2");
+    }
+
+    @Test
+    void delete_shouldThrow_WhenChallengeNotFound() {
+        // given
+        String id = "missing";
+        when(challengeRepository.findById(id)).thenReturn(Optional.empty());
+
+        // when / then
+        assertThatThrownBy(() -> challengeService.delete(id))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        verify(challengeRepository, never()).delete(any());
+    }
+
+    @Test
+    void delete_shouldRemoveChallenge_WhenExists() {
+        // given
+        String id = "123";
+        Challenge existing = Challenge.builder().id(id).build();
+        when(challengeRepository.findById(id)).thenReturn(Optional.of(existing));
+
+        // when
+        challengeService.delete(id);
+
+        // then
+        verify(challengeRepository).delete(existing);
+    }
+}
+====================
+// Файл: backend-core/src/main/resources/application-test.properties
+====================
+
+spring.data.mongodb.uri=mongodb://localhost:27017/hackathondb-test
+
+hackathon.jwt.secret=test-secret-key-12345678901234567890
+hackathon.jwt.expiration-ms=3600000
+hackathon.storage.upload-dir=./uploads-test
+hackathon.max-file-size-bytes=52428800
+====================
 // Файл: backend-core/src/main/resources/application.properties
 ====================
 
@@ -2381,7 +3329,7 @@ server.port=8080
 spring.data.mongodb.uri=mongodb://localhost:27017/hackathondb
 
 # Hackathon settings
-hackathon.jwt.secret=change-this-secret-in-prod
+hackathon.jwt.secret=super-secret-jwt-key-please-change-1234567890
 hackathon.jwt.expiration-ms=3600000
 hackathon.storage.upload-dir=./uploads
 hackathon.max-file-size-bytes=52428800  # 50 MB
@@ -2407,6 +3355,38 @@ public class BackendCoreApplication {
 }
 
 ====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeResponse.java
+====================
+
+package myapp.backendcore.dto;
+
+import myapp.backendcore.model.ChallengeStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ChallengeResponse {
+
+    private String id;
+
+    private String title;
+
+    private String description;
+
+    private ChallengeStatus status;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
+}
+====================
 // Файл: backend-core/src/main/java/myapp/backendcore/dto/RegisterRequest.java
 ====================
 
@@ -2419,6 +3399,20 @@ public class RegisterRequest {
     private String email;
     private String password;
     private String displayName;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/SubmissionResultDto.java
+====================
+
+package myapp.backendcore.dto;
+
+import lombok.Data;
+
+@Data
+public class SubmissionResultDto {
+    private String status;       // "DONE" or "FAILED"
+    private Double score;        // may be null if failed
+    private String errorMessage; // worker error or null
 }
 ====================
 // Файл: backend-core/src/main/java/myapp/backendcore/dto/AuthResponse.java
@@ -2449,6 +3443,119 @@ public class LoginRequest {
     private String password;
 }
 ====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeCreateRequest.java
+====================
+
+package myapp.backendcore.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import myapp.backendcore.model.ChallengeStatus;
+
+import java.util.Optional;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChallengeCreateRequest {
+
+    @NotBlank
+    private String title;
+
+    @Size(max = 2000)
+    private String description;
+
+    private Optional<ChallengeStatus> status = Optional.empty(); // Initialize to Optional.empty()
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeUpdateRequest.java
+====================
+
+package myapp.backendcore.dto;
+
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import myapp.backendcore.model.ChallengeStatus;
+
+import java.util.Optional;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChallengeUpdateRequest {
+
+    private String title;
+
+    @Size(max = 2000)
+    private String description;
+
+    private Optional<ChallengeStatus> status;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/ChallengeResponse.java
+====================
+
+package myapp.backendcore.repository;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import myapp.backendcore.model.ChallengeStatus;
+
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChallengeResponse {
+
+    private String id;
+    private String title;
+    private String description;
+    private ChallengeStatus status;
+    private Instant createdAt;
+    private Instant updatedAt;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/ChallengeRepository.java
+====================
+
+package myapp.backendcore.repository;
+
+import myapp.backendcore.model.Challenge;
+import myapp.backendcore.model.ChallengeStatus;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.List;
+
+public interface ChallengeRepository extends MongoRepository<Challenge, String> {
+    List<Challenge> findByStatus(ChallengeStatus status);
+}
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/repository/SubmissionRepository.java
+====================
+
+package myapp.backendcore.repository;
+
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.SubmissionStatus;
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.List;
+
+public interface SubmissionRepository extends MongoRepository<Submission, String> {
+    List<Submission> findByStatus(SubmissionStatus status);
+    boolean existsBySubmissionHash(String submissionHash);
+}
+====================
 // Файл: backend-core/src/main/java/myapp/backendcore/repository/UserRepository.java
 ====================
 
@@ -2467,48 +3574,149 @@ public interface UserRepository extends MongoRepository<User, String> {
 // Файл: backend-core/src/main/java/myapp/backendcore/config/SecurityConfig.java
 ====================
 
-package myapp.backendcore.config;
+package myapp.backendcore.security;
 
 import lombok.RequiredArgsConstructor;
-import myapp.backendcore.security.JwtAuthenticationFilter;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.*;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableMethodSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/internal/**").authenticated()
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)// <-- IMPORTANT for CORS support
+                .sessionManagement(sess ->
+                        sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+
+                        // Authentication public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Public challenge GET requests
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/challenges",
+                                "/api/challenges/**"
+                        ).permitAll()
+
+                        // Swagger docs public
+                        .requestMatchers("/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
+                        ).permitAll()
+
+                        // Admin-only area
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Node.js worker scoring endpoints (secure)
+                        .requestMatchers("/api/internal/**").hasRole("ADMIN") // or custom "ROLE_WORKER"
+
+                        // Everything else requires JWT
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/config/OpenApiConfig.java
+====================
+
+package myapp.backendcore.config;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    private static final String SECURITY_SCHEME_NAME = "bearerAuth";
+
+    @Bean
+    public OpenAPI hackathonOpenApi() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Hackathon Scoring API")
+                        .description("Backend API for challenges, submissions, and admin management.")
+                        .version("v1"))
+                // Add JWT Bearer support in UI
+                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                .components(new Components()
+                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
+                                new SecurityScheme()
+                                        .name(SECURITY_SCHEME_NAME)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                        )
+                );
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/config/WebConfig.java
+====================
+
+package myapp.backendcore.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig {
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+
+                registry.addMapping("/**")
+                        .allowedOrigins(
+                                "http://localhost:5173",   // Vite frontend
+                                "http://127.0.0.1:5173"    // Some browsers use 127.0.0.1
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .exposedHeaders("Authorization")
+                        .allowCredentials(true);
+            }
+        };
     }
 }
 ====================
@@ -2520,10 +3728,12 @@ package myapp.backendcore.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+
 import myapp.backendcore.model.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -2540,7 +3750,13 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
-        signingKey = Keys.hmacShaKeyFor(secret.getBytes());
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+
+        if (keyBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret must be at least 32 bytes");
+        }
+
+        signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(User user) {
@@ -2566,23 +3782,96 @@ public class JwtUtil {
     }
 }
 ====================
+// Файл: backend-core/src/main/java/myapp/backendcore/security/SecurityConfig.java
+====================
+
+package myapp.backendcore.security;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@RequiredArgsConstructor
+@EnableMethodSecurity // for @PreAuthorize
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(sess ->
+                        sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                        // auth endpoints are public
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // swagger (optional)
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
+                        ).permitAll()
+
+                        // admin endpoints – optional: you can rely only on @PreAuthorize, but this reinforces it
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // everything else requires auth
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    // Often needed for auth flow (login)
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
+}
+====================
 // Файл: backend-core/src/main/java/myapp/backendcore/security/JwtAuthenticationFilter.java
 ====================
 
 package myapp.backendcore.security;
 
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.*;
-import jakarta.servlet.http.*;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -2591,42 +3880,55 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-//    private final UserDetailsServiceImpl userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain chain)
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
-        String header = request.getHeader("Authorization");
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (header != null && header.startsWith("Bearer ")) {
-
-            String token = header.substring(7);
-
-            try {
-                Claims claims = jwtUtil.extractClaims(token);
-
-                String email = claims.get("email", String.class);
-                List<String> roles = claims.get("roles", List.class);
-
-                var authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
-
-                Authentication auth = new UsernamePasswordAuthenticationToken(
-                        email, null, authorities
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(auth);
-
-            } catch (Exception ex) {
-                // If token invalid → ignore, request will be unauthorized later
-            }
+        // Якщо немає заголовка або він не Bearer – просто пропускаємо далі
+        if (header == null || !header.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        chain.doFilter(request, response);
+        String token = header.substring(7);
+
+        try {
+            // Якщо в тебе в JwtUtil метод називається інакше (getClaims),
+            // поміняй тут відповідно:
+            Claims claims = jwtUtil.extractClaims(token);
+            // Claims claims = jwtUtil.getClaims(token);
+
+            String email = claims.get("email", String.class);
+
+            // roles збережені як List<String> у claims
+            List<String> roles = claims.get("roles", List.class);
+
+            Collection<? extends GrantedAuthority> authorities =
+                    roles.stream()
+                            // Якщо в токені ролі вже йдуть з "ROLE_",
+                            // заміни цей рядок на new SimpleGrantedAuthority(role)
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                            .collect(Collectors.toList());
+
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    email,
+                    null,
+                    authorities
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+        } catch (Exception ex) {
+            // Якщо токен кривий/протух – просто чистимо контекст і йдемо далі
+            SecurityContextHolder.clearContext();
+        }
+
+        filterChain.doFilter(request, response);
     }
 }
 ====================
@@ -2667,52 +3969,296 @@ public class UserDetailsServiceImpl implements org.springframework.security.core
     }
 }
 ====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/InternalSubmissionController.java
+====================
+
+package myapp.backendcore.controller;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.dto.SubmissionResultDto;
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.SubmissionStatus;
+import myapp.backendcore.service.SubmissionService;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/internal/submissions")
+@RequiredArgsConstructor
+public class InternalSubmissionController {
+
+    private final SubmissionService submissionService;
+
+    // Worker picks next submission
+    @GetMapping("/next")
+    public ResponseEntity<?> getNextPendingSubmission() {
+
+        var pendingOpt = submissionService.fetchNextPending();
+
+        if (pendingOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build(); // nothing to process
+        }
+
+        Submission s = submissionService.markAsProcessing(pendingOpt.get());
+        return ResponseEntity.ok(s);
+    }
+
+    // Worker sends back final score
+    @PostMapping("/{id}/result")
+    public ResponseEntity<?> postResult(
+            @PathVariable String id,
+            @RequestBody SubmissionResultDto dto
+    ) {
+        try {
+            SubmissionStatus status;
+
+            if ("DONE".equalsIgnoreCase(dto.getStatus())) {
+                status = SubmissionStatus.DONE;
+            } else {
+                status = SubmissionStatus.FAILED;
+            }
+
+            Submission updated = submissionService.updateSubmissionResult(
+                    id,
+                    status,
+                    dto.getScore(),
+                    dto.getErrorMessage()
+            );
+
+            return ResponseEntity.ok(updated);
+
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        }
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/AdminChallengeController.java
+====================
+
+package myapp.backendcore.controller;
+
+import myapp.backendcore.dto.ChallengeCreateRequest;
+import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeUpdateRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.service.ChallengeService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/challenges")
+@RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
+public class AdminChallengeController {
+
+    private final ChallengeService challengeService;
+
+    @PostMapping
+    public ResponseEntity<ChallengeResponse> createChallenge(
+            @Valid @RequestBody ChallengeCreateRequest request
+    ) {
+        ChallengeResponse response = challengeService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ChallengeResponse> updateChallenge(
+            @PathVariable String id,
+            @Valid @RequestBody ChallengeUpdateRequest request
+    ) {
+        ChallengeResponse response = challengeService.update(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ChallengeResponse> getChallenge(
+            @PathVariable String id
+    ) {
+        ChallengeResponse response = challengeService.getById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ChallengeResponse>> getAllChallenges() {
+        List<ChallengeResponse> responses = challengeService.getAll();
+        return ResponseEntity.ok(responses);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteChallenge(
+            @PathVariable String id
+    ) {
+        challengeService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+====================
 // Файл: backend-core/src/main/java/myapp/backendcore/controller/AuthController.java
 ====================
 
 package myapp.backendcore.controller;
 
 import lombok.RequiredArgsConstructor;
-import myapp.backendcore.dto.AuthResponse;
 import myapp.backendcore.dto.LoginRequest;
 import myapp.backendcore.dto.RegisterRequest;
 import myapp.backendcore.model.User;
 import myapp.backendcore.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-        try {
-            User newUser = authService.register(req.getEmail(), req.getPassword(), req.getDisplayName());
-            return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
-        }
+    public ResponseEntity<User> register(@RequestBody RegisterRequest req) {
+        User user = authService.register(
+                req.getEmail(),
+                req.getPassword(),
+                req.getDisplayName()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+        String token = authService.login(req.getEmail(), req.getPassword());
+        return ResponseEntity.ok().body(new Object() {
+            public final String tokenValue = token;
+            public String getToken() { return tokenValue; }
+        });
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/controller/SubmissionController.java
+====================
+
+package myapp.backendcore.controller;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.repository.UserRepository;
+import myapp.backendcore.service.SubmissionService;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api")
+public class SubmissionController {
+
+    private final SubmissionService submissionService;
+    private final UserRepository userRepository;
+
+    @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> submit(
+            @RequestParam("challengeId") String challengeId,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
         try {
-            String token = authService.login(req.getEmail(), req.getPassword());
-            String userId = authService.userRepository.findByEmail(req.getEmail()).get().getId();
-            return ResponseEntity.ok(new AuthResponse(token, userId));
+            String userEmail = authentication.getName();
+
+            var user = userRepository.findByEmail(userEmail).orElseThrow();
+
+            Submission submission = submissionService.createSubmission(
+                    user.getId(),
+                    challengeId,
+                    file
+            );
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(submission);
+
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error");
         }
     }
 }
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/ChallengeStatus.java
+====================
+
+package myapp.backendcore.model;
+
+public enum ChallengeStatus {
+    OPEN,
+    CLOSED
+}
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/Submission.java
+====================
+
+package myapp.backendcore.model;
+
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "submissions")
+public class Submission {
+
+    @Id
+    private String id;
+
+    private String userId;
+    private String challengeId;
+
+    private String filename;          // stored filename on disk
+    private String originalFilename;
+
+    private long fileSize;
+
+    private SubmissionStatus status;
+
+    private Double score;             // null until processed
+    private String errorMessage;
+
+    private String submissionHash;    // SHA1 for duplicate detection
+
+    private Instant createdAt;
+    private Instant updatedAt;
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/SubmissionStatus.java
+====================
+
+package myapp.backendcore.model;
+
+public enum SubmissionStatus {
+    PENDING,
+    PROCESSING,
+    DONE,
+    FAILED,
+    REJECTED
+}
+
 ====================
 // Файл: backend-core/src/main/java/myapp/backendcore/model/User.java
 ====================
@@ -2744,12 +4290,160 @@ public class User {
     private Set<String> roles; // e.g. ROLE_USER, ROLE_ADMIN
 }
 ====================
+// Файл: backend-core/src/main/java/myapp/backendcore/model/Challenge.java
+====================
+
+package myapp.backendcore.model;
+
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.Instant;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "challenges")
+public class Challenge {
+
+    @Id
+    private String id;
+    private String title;
+    private String description;
+    private ChallengeStatus status = ChallengeStatus.OPEN;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+}
+
+
+//🔍 Why “Document” and not “Entity”?
+//        •	In MongoDB, the term is document, not entity.
+//        •	MongoDB stores data as BSON documents (similar to JSON).
+//        •	Spring Boot maps a “document” class to a MongoDB collection.
+//
+//So:
+//        •	In SQL → you have entities, tables
+//	•	In Mongo → you have documents, collections
+
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/service/ChallengeService.java
+====================
+
+package myapp.backendcore.service;
+
+import myapp.backendcore.dto.ChallengeCreateRequest;
+import myapp.backendcore.dto.ChallengeResponse;
+import myapp.backendcore.dto.ChallengeUpdateRequest;
+import myapp.backendcore.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.Challenge;
+import myapp.backendcore.model.ChallengeStatus;
+import myapp.backendcore.repository.ChallengeRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class ChallengeService {
+
+    private final ChallengeRepository challengeRepository;
+
+    public ChallengeResponse create(ChallengeCreateRequest request) {
+        ChallengeStatus status = Optional.ofNullable(request.getStatus())
+                                          .orElse(Optional.of(ChallengeStatus.OPEN))
+                                          .orElse(ChallengeStatus.OPEN);
+
+        Challenge challenge = Challenge.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .status(status)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        Challenge savedChallenge = challengeRepository.save(challenge);
+
+        return new ChallengeResponse(
+                savedChallenge.getId(),
+                savedChallenge.getTitle(),
+                savedChallenge.getDescription(),
+                savedChallenge.getStatus(),
+                savedChallenge.getCreatedAt(),
+                savedChallenge.getUpdatedAt()
+        );
+    }
+
+    public ChallengeResponse update(String id, ChallengeUpdateRequest request) {
+        Challenge existing = challengeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+
+        // Update only non-null fields
+        if (request.getTitle() != null && request.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Title cannot be blank");
+        }
+        if (request.getTitle() != null) {
+            existing.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            existing.setDescription(request.getDescription());
+        }
+        if (request.getStatus().isPresent()) {
+            existing.setStatus(request.getStatus().get());
+        }
+
+        existing.setUpdatedAt(Instant.now());
+
+        Challenge saved = challengeRepository.save(existing);
+        return toResponse(saved);
+    }
+
+    public ChallengeResponse getById(String id) {
+        Challenge challenge = challengeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+        return toResponse(challenge);
+    }
+
+    public List<ChallengeResponse> getAll() {
+        return challengeRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public void delete(String id) {
+        Challenge existing = challengeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+        challengeRepository.delete(existing);
+    }
+
+    // ─────────────────────────────
+    // Mapping helper
+    // ─────────────────────────────
+    private ChallengeResponse toResponse(Challenge challenge) {
+        return ChallengeResponse.builder()
+                .id(challenge.getId())
+                .title(challenge.getTitle())
+                .description(challenge.getDescription())
+                .status(challenge.getStatus())
+                .createdAt(challenge.getCreatedAt())
+                .updatedAt(challenge.getUpdatedAt())
+                .build();
+    }
+}
+====================
 // Файл: backend-core/src/main/java/myapp/backendcore/service/AuthService.java
 ====================
 
 package myapp.backendcore.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import myapp.backendcore.model.User;
 import myapp.backendcore.repository.UserRepository;
 import myapp.backendcore.security.JwtUtil;
@@ -2760,11 +4454,15 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     public final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+    private static final String ROLE_USER = "ROLE_USER";
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     public User register(String email, String password, String displayName) {
 
@@ -2772,11 +4470,21 @@ public class AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
 
+        // Hackathon rule: first ever registered user becomes ADMIN
+        boolean firstUser = userRepository.count() == 0;
+        Set<String> roles = firstUser
+                ? Set.of(ROLE_USER, ROLE_ADMIN)
+                : Set.of(ROLE_USER);
+
+        if (firstUser) {
+            log.warn("⚠️ First user detected — assigning ADMIN role automatically.");
+        }
+
         User user = User.builder()
                 .email(email)
                 .passwordHash(encoder.encode(password))
                 .displayName(displayName)
-                .roles(Set.of("ROLE_USER"))
+                .roles(roles)
                 .build();
 
         return userRepository.save(user);
@@ -2790,9 +4498,242 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        return jwtUtil.generateToken(String.valueOf(u.getId()), u.getEmail(), u.getRoles());
+        return jwtUtil.generateToken(u);
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/service/SubmissionService.java
+====================
+
+package myapp.backendcore.service;
+
+import lombok.RequiredArgsConstructor;
+import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.SubmissionStatus;
+import myapp.backendcore.repository.SubmissionRepository;
+import myapp.backendcore.repository.UserRepository;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
+import java.nio.file.*;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class SubmissionService {
+
+    private final SubmissionRepository submissionRepository;
+    private final UserRepository userRepository;
+
+    @Value("${hackathon.storage.upload-dir}")
+    private String uploadDir;
+
+    public Submission createSubmission(String userId, String challengeId, MultipartFile file) throws Exception {
+
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File cannot be empty");
+        }
+
+        // Ensure directory exists
+        Files.createDirectories(Paths.get(uploadDir));
+
+        // Compute SHA1 (anti-cheating)
+        String sha1;
+        try (InputStream in = file.getInputStream()) {
+            sha1 = DigestUtils.sha1Hex(in);
+        }
+
+        // Check duplicate
+        if (submissionRepository.existsBySubmissionHash(sha1)) {
+            throw new IllegalArgumentException("Duplicate submission detected");
+        }
+
+        // Store file with safe name
+        String storedName = Instant.now().toEpochMilli() + "-" +
+                file.getOriginalFilename().replaceAll("\\s+", "_");
+
+        Path dest = Paths.get(uploadDir).resolve(storedName);
+
+        try (InputStream in = file.getInputStream()) {
+            Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        Submission submission = Submission.builder()
+                .userId(userId)
+                .challengeId(challengeId)
+                .filename(storedName)
+                .originalFilename(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .status(SubmissionStatus.PENDING)
+                .submissionHash(sha1)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        return submissionRepository.save(submission);
     }
 
+    public Optional<Submission> fetchNextPending() {
+        return submissionRepository.findByStatus(SubmissionStatus.PENDING)
+                .stream()
+                .sorted(Comparator.comparing(Submission::getCreatedAt))
+                .findFirst();
+    }
+
+    public Submission markAsProcessing(Submission s) {
+        s.setStatus(SubmissionStatus.PROCESSING);
+        s.setUpdatedAt(Instant.now());
+        return submissionRepository.save(s);
+    }
+
+    public Submission updateSubmissionResult(String id, SubmissionStatus status, Double score, String errorMessage) {
+        Submission s = submissionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+
+        s.setStatus(status);
+        s.setScore(score);
+        s.setErrorMessage(errorMessage);
+        s.setUpdatedAt(Instant.now());
+
+        return submissionRepository.save(s);
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/exception/ResourceNotFoundException.java
+====================
+
+package myapp.backendcore.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+
+    public ResourceNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+====================
+// Файл: backend-core/src/main/java/myapp/backendcore/exception/GlobalExceptionHandler.java
+====================
+
+package myapp.backendcore.exception;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    // ─────────────────────────────────────────────────────────────
+    // 404 – Resource Not Found
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(
+            ResourceNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 400 – Validation errors (DTO field errors)
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Validation Failed");
+
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(err ->
+                fieldErrors.put(err.getField(), err.getDefaultMessage())
+        );
+
+        body.put("messages", fieldErrors);
+        body.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    // For validator-based validation on query params / path params
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 403 – Access denied (not ADMIN)
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.FORBIDDEN, "Access denied", request);
+    }
+    // ─────────────────────────────────────────────────────────────
+    // 500 – Illegal argument exception
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 500 – Generic unexpected error (fallback)
+    // ─────────────────────────────────────────────────────────────
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGeneric(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return buildError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Helper builder for error responses
+    // ─────────────────────────────────────────────────────────────
+    private ResponseEntity<Map<String, Object>> buildError(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        body.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(status).body(body);
+    }
 }
     we are on hackaton right now you are a professional full stack software enginner; we workr in a team of 4 people be sure to note different parts of our app; do the best; easy working solutions, dont add unnecessary things
 
