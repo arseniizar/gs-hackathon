@@ -7,7 +7,6 @@ dotenv.config();
 const CORE_API = process.env.CORE_API;
 const WORKER_SECRET = process.env.WORKER_SECRET;
 
-// Track seen submission hashes to detect duplicates/plagiarism
 const seenHashes = new Set();
 
 export const startQueueListener = () => {
@@ -30,7 +29,7 @@ async function getNextPendingSubmission() {
     try {
         const response = await axios.get(`${CORE_API}/api/internal/submissions/next`, {
             headers: {
-                "X-Worker": WORKER_SECRET
+                "X-WORKER-TOKEN": WORKER_SECRET
             }
         });
 
@@ -38,10 +37,7 @@ async function getNextPendingSubmission() {
         return response.data;
 
     } catch (err) {
-        // Treat 404 as "no pending submissions"
-        if (err.response?.status === 404) {
-            return null;
-        }
+        if (err.response?.status === 404) return null;
 
         console.error("Error fetching next submission:", err.message);
         return null;
@@ -50,28 +46,26 @@ async function getNextPendingSubmission() {
 
 async function processSubmission(submission) {
     try {
-        // scoreSubmission returns an OBJECT: { score, hash, totalRows, timestamp }
-        const { score, hash, totalRows, timestamp } = await scoreSubmission(submission);
+        const { score, hash, totalRows, timestamp, type } =
+            await scoreSubmission(submission);
 
         let finalScore = score;
         let plagiarism = false;
 
         if (seenHashes.has(hash)) {
-            console.log("Duplicate submission hash detected, marking as plagiarism. Hash:", hash);
-            finalScore = 0;
             plagiarism = true;
+            finalScore = 0;
+            console.log("⚠ Duplicate submission detected:", hash);
         } else {
             seenHashes.add(hash);
         }
 
-        // Send result back to backend-core.
-        // If your backend only expects "status" and "score",
-        // you can drop hash/totalRows/timestamp from the body.
         await axios.post(
             `${CORE_API}/api/internal/submissions/${submission._id}/result`,
             {
                 status: "DONE",
                 score: finalScore,
+                type,
                 hash,
                 totalRows,
                 timestamp,
@@ -79,7 +73,7 @@ async function processSubmission(submission) {
             },
             {
                 headers: {
-                    "X-Worker": WORKER_SECRET
+                    "X-WORKER-TOKEN": WORKER_SECRET
                 }
             }
         );
@@ -93,11 +87,11 @@ async function processSubmission(submission) {
             `${CORE_API}/api/internal/submissions/${submission._id}/result`,
             {
                 status: "FAILED",
-                errorMessage: err.message || "Unknown error"
+                errorMessage: err.message
             },
             {
                 headers: {
-                    "X-Worker": WORKER_SECRET
+                    "X-WORKER-TOKEN": WORKER_SECRET
                 }
             }
         );

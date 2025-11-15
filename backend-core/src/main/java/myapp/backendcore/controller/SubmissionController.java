@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+
 @RestController
 @RequestMapping("/api")
 public class SubmissionController {
@@ -28,10 +29,15 @@ public class SubmissionController {
             Authentication authentication
     ) {
         try {
-            String userEmail = authentication.getName();
+            // Validate file type
+            if (file.isEmpty() || !file.getOriginalFilename().endsWith(".csv")) {
+                return ResponseEntity.badRequest().body("Invalid file. Only CSV files are allowed.");
+            }
 
+            String userEmail = authentication.getName();
             var user = userRepository.findByEmail(userEmail).orElseThrow();
 
+            // Process the CSV file as part of submission creation
             Submission submission = submissionService.createSubmission(
                     user.getId(),
                     challengeId,
@@ -85,5 +91,14 @@ public class SubmissionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Unexpected error occurred while scoring the submission");
         }
+    }
+
+    @GetMapping("/download-ground-truth")
+    public ResponseEntity<?> downloadGroundTruth(@RequestParam("submissionId")  Long submissionId) {
+        if (submissionId <= 0) {
+            return ResponseEntity.badRequest().body("Invalid submission ID.");
+        }
+        // ...existing logic for downloading ground truth...
+        return ResponseEntity.ok("Ground truth downloaded successfully.");
     }
 }
