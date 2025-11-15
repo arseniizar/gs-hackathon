@@ -1,6 +1,5 @@
 package myapp.backendcore.security;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.repository.UserRepository;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
@@ -12,10 +11,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements org.springframework.security.core.userdetails.UserDetailsService {
 
     private final UserRepository userRepository;
+
+    public UserDetailsServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String email) {

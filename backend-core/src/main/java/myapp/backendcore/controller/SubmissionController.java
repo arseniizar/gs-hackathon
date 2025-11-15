@@ -1,23 +1,25 @@
 package myapp.backendcore.controller;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.model.Submission;
 import myapp.backendcore.repository.UserRepository;
 import myapp.backendcore.service.SubmissionService;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api")
 public class SubmissionController {
 
     private final SubmissionService submissionService;
     private final UserRepository userRepository;
+
+    public SubmissionController(SubmissionService submissionService, UserRepository userRepository) {
+        this.submissionService = submissionService;
+        this.userRepository = userRepository;
+    }
 
     @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> submit(

@@ -1,6 +1,5 @@
 package myapp.backendcore.controller;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.service.SubmissionService;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,13 +9,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/internal/submissions")
-@RequiredArgsConstructor
 public class InternalSubmissionController {
 
     private final SubmissionService submissionService;
 
     @Value("${worker.secret}")
     private String workerSecret;
+
+    public InternalSubmissionController(SubmissionService submissionService) {
+        this.submissionService = submissionService;
+    }
 
     @PostMapping("/{id}/result")
     public ResponseEntity<Void> handleWorkerResult(

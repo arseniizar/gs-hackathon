@@ -1,7 +1,5 @@
 package myapp.backendcore.config;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import myapp.backendcore.model.Challenge;
 import myapp.backendcore.model.ChallengeStatus;
 import myapp.backendcore.model.User;
@@ -10,18 +8,25 @@ import myapp.backendcore.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 @Configuration
-@RequiredArgsConstructor
-@Slf4j
 public class DataSeeder implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final UserRepository userRepository;
     private final ChallengeRepository challengeRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public DataSeeder(UserRepository userRepository, ChallengeRepository challengeRepository) {
+        this.userRepository = userRepository;
+        this.challengeRepository = challengeRepository;
+    }
 
     @Override
     public void run(String... args) {

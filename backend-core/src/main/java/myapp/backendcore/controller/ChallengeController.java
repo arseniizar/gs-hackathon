@@ -1,6 +1,5 @@
 package myapp.backendcore.controller;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.model.Challenge;
 import myapp.backendcore.repository.ChallengeRepository;
 import org.springframework.http.ResponseEntity;
@@ -9,11 +8,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/challenges")
 public class ChallengeController {
 
     private final ChallengeRepository challengeRepository;
+
+    public ChallengeController(ChallengeRepository challengeRepository) {
+        this.challengeRepository = challengeRepository;
+    }
 
     // GET /api/challenges → list all challenges
     @GetMapping
