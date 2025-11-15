@@ -24,7 +24,8 @@ public class InternalSubmissionController {
     public ResponseEntity<Void> handleWorkerResult(
             @PathVariable String id,
             @RequestBody SubmissionResultDto body,
-            @RequestHeader("X-Worker") String workerHeaderSecret
+            @RequestHeader("X-WORKER-TOKEN") String workerHeaderSecret
+            // if your JS worker uses "X-WORKER-TOKEN", change to @RequestHeader("X-WORKER-TOKEN")
     ) {
         if (!workerSecret.equals(workerHeaderSecret)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

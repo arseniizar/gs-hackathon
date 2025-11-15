@@ -25,7 +25,24 @@ export async function scoreSubmission(submission) {
         throw new Error("Submission contains no matching IDs");
     }
 
-    const score = calculateRMSE(y_true, y_pred);
+    let score;
+
+    switch (submission.type) {
+        case "RMSE":
+            score = calculateRMSE(y_true, y_pred);
+            break;
+
+        case "ACCURACY":
+            score = calculateAccuracy(y_true, y_pred);
+            break;
+
+        case "AUC":
+            score = calculateAUC(y_true, y_pred);
+            break;
+
+        default:
+            throw new Error("Unknown submission type: " + submission.type);
+    }
 
     const hash = crypto
         .createHash("sha256")
@@ -36,7 +53,8 @@ export async function scoreSubmission(submission) {
         score,
         hash,
         totalRows: y_pred.length,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        type: submission.type
     };
 }
 
@@ -58,4 +76,36 @@ function calculateRMSE(y_true, y_pred) {
         sum += diff * diff;
     }
     return Math.sqrt(sum / y_true.length);
+}
+
+function calculateAccuracy(y_true, y_pred) {
+    let correct = 0;
+    for (let i = 0; i < y_true.length; i++) {
+        if (Math.round(y_pred[i]) === y_true[i]) correct++;
+    }
+    return correct / y_true.length;
+}
+
+// Correct AUC implementation
+function calculateAUC(y_true, y_pred) {
+    const pairs = y_true.map((y, i) => ({ y, pred: y_pred[i] }));
+    pairs.sort((a, b) => b.pred - a.pred);
+
+    let tp = 0;
+    let fp = 0;
+    let auc = 0;
+
+    const P = y_true.filter(v => v === 1).length;
+    const N = y_true.filter(v => v === 0).length;
+
+    for (const p of pairs) {
+        if (p.y === 1) {
+            tp++;
+        } else {
+            fp++;
+            auc += tp; // add the current TPR
+        }
+    }
+
+    return auc / (P * N);
 }
