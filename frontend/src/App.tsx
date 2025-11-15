@@ -17,7 +17,6 @@ function AppLayout() {
                     </Link>
                     <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/70">
                         <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
-                        <Link to={ROUTES.LEADERBOARD} className="transition-colors hover:text-foreground">Leaderboard</Link>
                         {isAdmin && (
                             <Link to={ROUTES.ADMIN} className="flex items-center gap-1 font-semibold text-primary transition-colors hover:text-foreground">
                                 <ShieldCheck className="h-4 w-4" />
