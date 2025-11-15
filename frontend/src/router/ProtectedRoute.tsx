@@ -1,14 +1,20 @@
-import {Navigate, Outlet, useLocation} from 'react-router-dom';
-import {useAuth} from '@/contexts/AuthContext';
-import {ROUTES} from './paths';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from './paths';
 
 function ProtectedRoute() {
-    const {isAuthenticated} = useAuth();
+    const { isAuthenticated, isProfileComplete } = useAuth();
     const location = useLocation();
+
     if (!isAuthenticated) {
-        return <Navigate to={ROUTES.LOGIN} replace state={{from: location}}/>;
+        return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
     }
-    return <Outlet/>;
+
+    if (!isProfileComplete && location.pathname !== ROUTES.TEAM_PROFILE) {
+        return <Navigate to={ROUTES.TEAM_PROFILE} replace />;
+    }
+
+    return <Outlet />;
 }
 
 export default ProtectedRoute;

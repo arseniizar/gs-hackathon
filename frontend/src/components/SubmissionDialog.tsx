@@ -1,73 +1,130 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { submitSolution } from '@/lib/api';
+import { UploadCloud, File as FileIcon, X } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
+import { cn } from '@/lib/utils';
 
 interface SubmissionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    challengeId: string;
     challengeTitle: string;
+    onSubmissionSuccess: () => void;
 }
 
-export function SubmissionDialog({ open, onOpenChange, challengeTitle }: SubmissionDialogProps) {
+export function SubmissionDialog({ open, onOpenChange, challengeId, challengeTitle, onSubmissionSuccess }: SubmissionDialogProps) {
     const [file, setFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { toast } = useToast();
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files.length > 0) {
-            setFile(event.target.files[0]);
-            setError(null);
+    const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+        setError(null);
+        if (acceptedFiles.length > 0) {
+            setFile(acceptedFiles[0]);
         }
-    };
+        if (fileRejections.length > 0) {
+            setError("File is not a valid CSV or is too large.");
+        }
+    }, []);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { 'text/csv': ['.csv'] },
+        multiple: false,
+        maxSize: 50 * 1024 * 1024, // 50MB limit
+    });
 
     const handleSubmit = async () => {
-        if (!file) {
-            setError("Please select a file to submit.");
+        if (!file || !challengeId) {
+            setError("File and Challenge ID are required.");
             return;
         }
 
         setIsUploading(true);
         setError(null);
 
-        // Імітація завантаження на сервер
-        console.log("Uploading file:", file.name);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+            await submitSolution(challengeId, file);
+            toast({
+                title: "Submission Successful",
+                description: "Your file has been sent for evaluation. Good luck!",
+            });
+            onSubmissionSuccess();
+            handleClose();
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.response?.data || "An unknown error occurred during upload.";
+            setError(errorMessage);
+            toast({
+                variant: "destructive",
+                title: "Submission Failed",
+                description: typeof errorMessage === 'string' ? errorMessage : "Please check the file and try again.",
+            });
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
-        console.log("Upload complete!");
-        setIsUploading(false);
-        onOpenChange(false); // Закриваємо діалог
-        setFile(null); // Скидаємо файл
+    const handleClose = () => {
+        if (isUploading) return;
+        onOpenChange(false);
+        setTimeout(() => {
+            setFile(null);
+            setError(null);
+        }, 300);
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+        <Dialog open={open} onOpenChange={handleClose}>
+            <DialogContent className="sm:max-w-[480px]" onInteractOutside={(e) => { if (isUploading) e.preventDefault(); }}>
                 <DialogHeader>
-                    <DialogTitle>Submit to: {challengeTitle}</DialogTitle>
+                    <DialogTitle className="font-serif text-xl">Submit to: {challengeTitle}</DialogTitle>
                     <DialogDescription>
-                        Select your solution file. The submission will be final.
+                        Your submission will be final. Please review your solution file carefully.
                     </DialogDescription>
                 </DialogHeader>
+
                 <div className="grid gap-4 py-4">
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="solution-file">Solution File (.csv)</Label>
-                        <Input id="solution-file" type="file" onChange={handleFileChange} accept=".csv" />
-                        {error && <p className="text-sm text-destructive mt-2">{error}</p>}
-                    </div>
+                    {!file ? (
+                        <div
+                            {...getRootProps()}
+                            className={cn(
+                                "flex flex-col items-center justify-center w-full h-36 px-4 text-center border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                                isDragActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/50",
+                                error ? "border-destructive" : ""
+                            )}
+                        >
+                            <input {...getInputProps()} />
+                            <UploadCloud className="w-8 h-8 text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                                <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-muted-foreground">CSV files up to 50MB</p>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-between p-3 border rounded-md bg-muted/50">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <FileIcon className="h-6 w-6 text-primary flex-shrink-0" />
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-medium truncate">{file.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                                    </span>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setFile(null)} disabled={isUploading}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                    {error && <p className="text-sm text-destructive mt-1">{error}</p>}
                 </div>
+
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
-                        Cancel
-                    </Button>
+                    <Button variant="outline" onClick={handleClose} disabled={isUploading}>Cancel</Button>
                     <Button onClick={handleSubmit} disabled={!file || isUploading}>
                         {isUploading ? "Uploading..." : "Submit Solution"}
                     </Button>

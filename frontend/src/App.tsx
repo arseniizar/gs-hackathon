@@ -6,7 +6,7 @@ import { ROUTES } from './router/paths';
 import { useAuth } from './contexts/AuthContext';
 
 function AppLayout() {
-    const { isAuthenticated, teamName, logout, isAdmin } = useAuth();
+    const { isAuthenticated, teamName, logout, isAdmin, isProfileComplete } = useAuth();
 
     return (
         <div className="min-h-screen w-full bg-background text-foreground font-sans">
@@ -16,8 +16,10 @@ function AppLayout() {
                         GS HACKATHON
                     </Link>
                     <nav className="hidden md:flex gap-6 text-sm font-medium text-foreground/70">
-                        <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
-                        {isAdmin && (
+                        {isProfileComplete && (
+                            <Link to={ROUTES.HOME} className="transition-colors hover:text-foreground">Challenges</Link>
+                        )}
+                        {isAdmin && isProfileComplete && (
                             <Link to={ROUTES.ADMIN} className="flex items-center gap-1 font-semibold text-primary transition-colors hover:text-foreground">
                                 <ShieldCheck className="h-4 w-4" />
                                 Admin
@@ -28,7 +30,10 @@ function AppLayout() {
                 <div className="flex items-center gap-2">
                     {isAuthenticated ? (
                         <>
-                            <Button variant="ghost">{teamName}</Button>
+                            {/* 👇 ЗМІНА: Робимо ім'я команди посиланням на профіль */}
+                            <Button variant="ghost" asChild>
+                                <Link to={ROUTES.TEAM_PROFILE}>{teamName || "Set Up Profile"}</Link>
+                            </Button>
                             <Button variant="outline" size="sm" onClick={logout}>Logout</Button>
                         </>
                     ) : (

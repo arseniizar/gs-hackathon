@@ -27,11 +27,23 @@ apiClient.interceptors.request.use((config) => {
 // --- AUTHENTICATION ---
 export const loginUser = async (credentials: object) => {
     const response = await apiClient.post('/auth/login', credentials);
-    return response.data; // Expected: { token, userId }
+    return response.data;
 };
 
 export const registerUser = async (userData: object) => {
     const response = await apiClient.post('/auth/register', userData);
+    return response.data;
+};
+
+
+// --- TEAM PROFILE ---
+export const getTeamProfile = async () => {
+    const response = await apiClient.get('/team/profile');
+    return response.data;
+};
+
+export const updateTeamProfile = async (profileData: object) => {
+    const response = await apiClient.put('/team/profile', profileData);
     return response.data;
 };
 
@@ -48,7 +60,7 @@ export const getChallengeDetails = async (challengeId: string) => {
 };
 
 
-// --- LEADERBOARD ---
+// --- LEADERBOARD & SUBMISSIONS ---
 export const getLeaderboardForChallenge = async (challengeId: string) => {
     const response = await apiClient.get(`/challenges/${challengeId}/leaderboard`);
     return response.data;
@@ -56,6 +68,19 @@ export const getLeaderboardForChallenge = async (challengeId: string) => {
 
 export const getMySubmissions = async (challengeId: string) => {
     const response = await apiClient.get(`/submissions/my?challengeId=${challengeId}`);
+    return response.data;
+};
+
+export const submitSolution = async (challengeId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('challengeId', challengeId);
+    formData.append('file', file);
+
+    const response = await apiClient.post('/submit', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data;
 };
 

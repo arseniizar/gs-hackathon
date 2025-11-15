@@ -65,13 +65,7 @@ function AdminChallengesList() {
                             {challenges.map((c) => (
                                 <TableRow key={c.id}>
                                     <TableCell className="font-medium">
-                                        <Link
-                                            to={ROUTES.CHALLENGE_DETAILS(c.id)}
-                                            state={{ fromAdmin: true }} // 👈 Ось ця частина
-                                            className="hover:underline"
-                                        >
-                                            {c.title}
-                                        </Link>
+                                        <Link to={ROUTES.CHALLENGE_DETAILS(c.id)} state={{ fromAdmin: true }} className="hover:underline" title="View public page">{c.title}</Link>
                                     </TableCell>
                                     <TableCell><Badge variant={c.status === 'OPEN' ? 'default' : 'secondary'}>{c.status}</Badge></TableCell>
                                     <TableCell className="text-right space-x-1">
@@ -92,7 +86,7 @@ function AdminChallengesList() {
     );
 }
 
-// --- Компонент AdminUsersList (без змін) ---
+// --- Компонент для вкладки "Users" (ЗІ ЗМІНАМИ) ---
 function AdminUsersList() {
     const [users, setUsers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -109,7 +103,9 @@ function AdminUsersList() {
         }
     };
 
-    useEffect(() => { fetchUsers(); }, []);
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
     const handleDelete = async (id: string) => {
         if (window.confirm('Are you sure you want to delete this user? This action is irreversible.')) {
@@ -132,17 +128,24 @@ function AdminUsersList() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Display Name</TableHead><TableHead>Email</TableHead><TableHead>Roles</TableHead><TableHead className="text-right">Actions</TableHead>
+                                {/* 👇 ЗМІНА: "Display Name" -> "Team Name" */}
+                                <TableHead>Team Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Roles</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {users.map((u) => (
                                 <TableRow key={u.id}>
-                                    <TableCell className="font-medium">{u.displayName}</TableCell>
+                                    {/* 👇 ЗМІНА: u.displayName -> u.teamName */}
+                                    <TableCell className="font-medium">{u.teamName || <span className="text-muted-foreground italic">Not set</span>}</TableCell>
                                     <TableCell>{u.email}</TableCell>
                                     <TableCell>
                                         <div className="flex gap-1">
-                                            {u.roles.map((r: string) => (<Badge key={r} variant={r === 'ROLE_ADMIN' ? 'default' : 'outline'}>{r.replace('ROLE_', '')}</Badge>))}
+                                            {u.roles.map((r: string) => (
+                                                <Badge key={r} variant={r === 'ROLE_ADMIN' ? 'default' : 'outline'}>{r.replace('ROLE_', '')}</Badge>
+                                            ))}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -161,7 +164,7 @@ function AdminUsersList() {
 }
 
 
-// --- Головна сторінка-контейнер (ЗІ ЗМІНАМИ В ТАБАХ) ---
+// --- Головна сторінка-контейнер (без змін) ---
 function AdminPage() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -175,18 +178,11 @@ function AdminPage() {
         <div className="mx-auto max-w-6xl px-8 py-16">
             <h1 className="text-4xl font-medium font-serif tracking-tight mb-8">Admin Console</h1>
             <Tabs value={currentTab} onValueChange={onTabChange}>
-                {/* 👇 ЗМІНЕНО: Стилі для TabsList та TabsTrigger */}
                 <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0 mb-8">
-                    <TabsTrigger
-                        value="challenges"
-                        className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-sans text-sm font-semibold text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary -mb-px mr-8"
-                    >
+                    <TabsTrigger value="challenges" className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-sans text-sm font-semibold text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary -mb-px mr-8">
                         Manage Challenges
                     </TabsTrigger>
-                    <TabsTrigger
-                        value="users"
-                        className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-sans text-sm font-semibold text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary -mb-px"
-                    >
+                    <TabsTrigger value="users" className="relative h-auto rounded-none border-b-2 border-transparent bg-transparent px-0 pb-3 pt-2 font-sans text-sm font-semibold text-muted-foreground shadow-none transition-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary -mb-px">
                         Manage Users
                     </TabsTrigger>
                 </TabsList>

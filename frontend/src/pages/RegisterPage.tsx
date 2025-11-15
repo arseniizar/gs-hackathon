@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { registerUser } from '@/lib/api'; // We created this in step 2.1
+import { registerUser } from '@/lib/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { ROUTES } from '@/router/paths';
 
@@ -28,12 +28,10 @@ function RegisterPage() {
 
         try {
             await registerUser(formData);
-            // On success, redirect to login
-            navigate(ROUTES.LOGIN);
+            navigate(ROUTES.LOGIN, { state: { message: 'Registration successful! Please log in.' } });
         } catch (err: any) {
-            // Check if the error response has a message, otherwise default
             const msg = err.response?.data || 'Registration failed. Please try again.';
-            setError(typeof msg === 'string' ? msg : 'Registration failed.');
+            setError(typeof msg === 'string' ? msg : 'An unknown error occurred.');
         } finally {
             setIsLoading(false);
         }
@@ -43,22 +41,22 @@ function RegisterPage() {
         <div className="flex items-center justify-center py-24 px-4">
             <Card className="mx-auto max-w-sm w-full">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-serif">Register Team</CardTitle>
+                    <CardTitle className="text-2xl font-serif">Create Account</CardTitle>
                     <CardDescription>
-                        Create an account to participate in the Hackathon.
+                        Register to participate in the Hackathon.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleRegister} className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="displayName">Team / User Name</Label>
+                            <Label htmlFor="displayName">Your Full Name</Label>
                             <Input
                                 id="displayName"
                                 required
                                 value={formData.displayName}
                                 onChange={handleChange}
                                 disabled={isLoading}
-                                placeholder="Team Alpha"
+                                placeholder="John Doe"
                             />
                         </div>
                         <div className="grid gap-2">

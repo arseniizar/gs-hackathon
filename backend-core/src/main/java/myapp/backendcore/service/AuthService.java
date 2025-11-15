@@ -34,7 +34,6 @@ public class AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
 
-        // Hackathon rule: first ever registered user becomes ADMIN
         boolean firstUser = userRepository.count() == 0;
         Set<String> roles = firstUser
                 ? Set.of(ROLE_USER, ROLE_ADMIN)
@@ -47,7 +46,6 @@ public class AuthService {
         User user = User.builder()
                 .email(email)
                 .passwordHash(encoder.encode(password))
-                .displayName(displayName)
                 .roles(roles)
                 .build();
 
@@ -55,7 +53,7 @@ public class AuthService {
     }
 
     public AuthResponse login(String email, String password) {
-        var u = userRepository.findByEmail(email)
+        User u = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
         if (!encoder.matches(password, u.getPasswordHash())) {
