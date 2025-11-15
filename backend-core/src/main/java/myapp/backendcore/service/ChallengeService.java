@@ -1,10 +1,10 @@
 package myapp.backendcore.service;
 
+import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.ChallengeCreateRequest;
 import myapp.backendcore.dto.ChallengeResponse;
 import myapp.backendcore.dto.ChallengeUpdateRequest;
 import myapp.backendcore.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.model.Challenge;
 import myapp.backendcore.model.ChallengeStatus;
 import myapp.backendcore.repository.ChallengeRepository;
@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,61 +19,65 @@ public class ChallengeService {
 
     private final ChallengeRepository challengeRepository;
 
-    public ChallengeResponse create(ChallengeCreateRequest request) {
-        ChallengeStatus status = Optional.ofNullable(request.getStatus())
-                                          .orElse(Optional.of(ChallengeStatus.OPEN))
-                                          .orElse(ChallengeStatus.OPEN);
+    // ─────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────
+    public ChallengeResponse create(ChallengeCreateRequest req) {
 
         Challenge challenge = Challenge.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .status(status)
+                .title(req.getTitle())
+                .description(req.getDescription())
+                .metric(req.getMetric())
+                .status(ChallengeStatus.OPEN)     // always OPEN on create
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
 
-        Challenge savedChallenge = challengeRepository.save(challenge);
-
-        return new ChallengeResponse(
-                savedChallenge.getId(),
-                savedChallenge.getTitle(),
-                savedChallenge.getDescription(),
-                savedChallenge.getStatus(),
-                savedChallenge.getCreatedAt(),
-                savedChallenge.getUpdatedAt()
-        );
+        return toResponse(challengeRepository.save(challenge));
     }
 
-    public ChallengeResponse update(String id, ChallengeUpdateRequest request) {
-        Challenge existing = challengeRepository.findById(id)
+    // ─────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────
+    public ChallengeResponse update(String id, ChallengeUpdateRequest req) {
+
+        Challenge challenge = challengeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
 
-        // Update only non-null fields
-        if (request.getTitle() != null && request.getTitle().isBlank()) {
-            throw new IllegalArgumentException("Title cannot be blank");
-        }
-        if (request.getTitle() != null) {
-            existing.setTitle(request.getTitle());
-        }
-        if (request.getDescription() != null) {
-            existing.setDescription(request.getDescription());
-        }
-        if (request.getStatus().isPresent()) {
-            existing.setStatus(request.getStatus().get());
+        // Update BASIC fields
+        challenge.setTitle(req.getTitle());
+        challenge.setDescription(req.getDescription());
+        challenge.setMetric(req.getMetric());
+
+        // Validate and update STATUS
+        try {
+            ChallengeStatus newStatus =
+                    ChallengeStatus.valueOf(req.getStatus().trim().toUpperCase());
+
+            challenge.setStatus(newStatus);
+
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid status: " + req.getStatus());
         }
 
-        existing.setUpdatedAt(Instant.now());
+        challenge.setUpdatedAt(Instant.now());
 
-        Challenge saved = challengeRepository.save(existing);
-        return toResponse(saved);
+        return toResponse(challengeRepository.save(challenge));
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // GET BY ID
+    // ─────────────────────────────────────────────────────────────
     public ChallengeResponse getById(String id) {
         Challenge challenge = challengeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
+
         return toResponse(challenge);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // GET ALL
+    // ─────────────────────────────────────────────────────────────
     public List<ChallengeResponse> getAll() {
         return challengeRepository.findAll()
                 .stream()
@@ -82,20 +85,25 @@ public class ChallengeService {
                 .toList();
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // DELETE
+    // ─────────────────────────────────────────────────────────────
     public void delete(String id) {
-        Challenge existing = challengeRepository.findById(id)
+        Challenge challenge = challengeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Challenge not found: " + id));
-        challengeRepository.delete(existing);
+
+        challengeRepository.delete(challenge);
     }
 
-    // ─────────────────────────────
-    // Mapping helper
-    // ─────────────────────────────
+    // ─────────────────────────────────────────────────────────────
+    // MAPPING
+    // ─────────────────────────────────────────────────────────────
     private ChallengeResponse toResponse(Challenge challenge) {
         return ChallengeResponse.builder()
                 .id(challenge.getId())
                 .title(challenge.getTitle())
                 .description(challenge.getDescription())
+                .metric(challenge.getMetric())
                 .status(challenge.getStatus())
                 .createdAt(challenge.getCreatedAt())
                 .updatedAt(challenge.getUpdatedAt())

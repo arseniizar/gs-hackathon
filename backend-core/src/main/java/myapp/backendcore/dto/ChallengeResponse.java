@@ -13,16 +13,11 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 public class ChallengeResponse {
-
     private String id;
-
     private String title;
-
     private String description;
-
     private ChallengeStatus status;
-
+    private String metric;
     private Instant createdAt;
-
     private Instant updatedAt;
 }

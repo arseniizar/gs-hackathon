@@ -1,5 +1,6 @@
 package myapp.backendcore.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import myapp.backendcore.dto.LoginRequest;
 import myapp.backendcore.dto.RegisterRequest;
@@ -17,7 +18,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody RegisterRequest req) {
+    public ResponseEntity<User> register(@Valid @RequestBody RegisterRequest req) {
         User user = authService.register(
                 req.getEmail(),
                 req.getPassword(),
@@ -28,7 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         String token = authService.login(req.getEmail(), req.getPassword());
         return ResponseEntity.ok().body(new Object() {
             public final String tokenValue = token;

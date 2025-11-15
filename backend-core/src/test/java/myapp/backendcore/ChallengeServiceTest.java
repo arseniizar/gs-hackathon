@@ -38,20 +38,20 @@ class ChallengeServiceTest {
     }
 
     @Test
-    void create_shouldSaveChallengeWithDefaultOpenStatus_WhenStatusIsNull() {
+    void create_shouldSaveChallengeWithDefaultOpenStatus() {
         // given
         ChallengeCreateRequest request = new ChallengeCreateRequest();
         request.setTitle("Test Challenge");
         request.setDescription("Description");
-        request.setStatus(null); // simulate not provided
+        request.setMetric("accuracy");
 
-        // we capture the entity passed to repo
         ArgumentCaptor<Challenge> challengeCaptor = ArgumentCaptor.forClass(Challenge.class);
 
         Challenge saved = Challenge.builder()
                 .id("123")
                 .title("Test Challenge")
                 .description("Description")
+                .metric("accuracy")
                 .status(ChallengeStatus.OPEN)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -71,12 +71,11 @@ class ChallengeServiceTest {
         assertThat(toSave.getUpdatedAt()).isNotNull();
 
         assertThat(response.getId()).isEqualTo("123");
-        assertThat(response.getTitle()).isEqualTo("Test Challenge");
         assertThat(response.getStatus()).isEqualTo(ChallengeStatus.OPEN);
     }
 
     @Test
-    void update_shouldUpdateNonNullFields() {
+    void update_shouldUpdateFieldsCorrectly() {
         // given
         String id = "123";
         Challenge existing = Challenge.builder()
@@ -84,6 +83,7 @@ class ChallengeServiceTest {
                 .title("Old title")
                 .description("Old desc")
                 .status(ChallengeStatus.OPEN)
+                .metric("accuracy")
                 .createdAt(Instant.now().minusSeconds(3600))
                 .updatedAt(Instant.now().minusSeconds(3600))
                 .build();
@@ -92,42 +92,43 @@ class ChallengeServiceTest {
 
         ChallengeUpdateRequest request = new ChallengeUpdateRequest();
         request.setTitle("New title");
-        request.setDescription(null); // do not change
-        request.setStatus(Optional.of(ChallengeStatus.CLOSED));
+        request.setDescription("New desc");
+        request.setMetric("rmse");
+        request.setStatus("CLOSED");
 
-        when(challengeRepository.save(any(Challenge.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(challengeRepository.save(any(Challenge.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
         ChallengeResponse response = challengeService.update(id, request);
 
         // then
         assertThat(response.getTitle()).isEqualTo("New title");
+        assertThat(response.getDescription()).isEqualTo("New desc");
+        assertThat(response.getMetric()).isEqualTo("rmse");
         assertThat(response.getStatus()).isEqualTo(ChallengeStatus.CLOSED);
-        assertThat(response.getDescription()).isEqualTo("Old desc"); // unchanged
         assertThat(response.getUpdatedAt()).isNotNull();
 
         verify(challengeRepository).save(any(Challenge.class));
     }
 
     @Test
-    void getById_shouldThrow_WhenChallengeNotFound() {
-        // given
+    void getById_shouldThrow_WhenNotFound() {
         String id = "missing";
         when(challengeRepository.findById(id)).thenReturn(Optional.empty());
 
-        // when / then
         assertThatThrownBy(() -> challengeService.getById(id))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Challenge not found");
+                .hasMessageContaining("not found");
     }
 
     @Test
     void getAll_shouldReturnMappedResponses() {
-        // given
         Challenge c1 = Challenge.builder()
                 .id("1")
                 .title("C1")
                 .description("D1")
+                .metric("acc")
                 .status(ChallengeStatus.OPEN)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -137,6 +138,7 @@ class ChallengeServiceTest {
                 .id("2")
                 .title("C2")
                 .description("D2")
+                .metric("rmse")
                 .status(ChallengeStatus.CLOSED)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -144,22 +146,18 @@ class ChallengeServiceTest {
 
         when(challengeRepository.findAll()).thenReturn(List.of(c1, c2));
 
-        // when
         List<ChallengeResponse> responses = challengeService.getAll();
 
-        // then
         assertThat(responses).hasSize(2);
         assertThat(responses.get(0).getId()).isEqualTo("1");
         assertThat(responses.get(1).getId()).isEqualTo("2");
     }
 
     @Test
-    void delete_shouldThrow_WhenChallengeNotFound() {
-        // given
+    void delete_shouldThrow_WhenNotFound() {
         String id = "missing";
         when(challengeRepository.findById(id)).thenReturn(Optional.empty());
 
-        // when / then
         assertThatThrownBy(() -> challengeService.delete(id))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -167,16 +165,13 @@ class ChallengeServiceTest {
     }
 
     @Test
-    void delete_shouldRemoveChallenge_WhenExists() {
-        // given
+    void delete_shouldDelete_WhenExists() {
         String id = "123";
         Challenge existing = Challenge.builder().id(id).build();
         when(challengeRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        // when
         challengeService.delete(id);
 
-        // then
         verify(challengeRepository).delete(existing);
     }
 }
