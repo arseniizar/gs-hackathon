@@ -1,0 +1,15 @@
+{
+  "name": "hackathon-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "cd frontend && npm install",
+    "start": "concurrently --kill-others-on-fail -n \"DB,API,WEB\" -c \"bgBlue.bold,bgMagenta.bold,bgGreen.bold\" \"npm:start:db\" \"npm:start:api\" \"npm:start:web\"",
+    "start:db": "docker-compose -f backend-core/docker-compose.yml up",
+    "start:api": "cd backend-core && ./mvnw spring-boot:run",
+    "start:web": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
