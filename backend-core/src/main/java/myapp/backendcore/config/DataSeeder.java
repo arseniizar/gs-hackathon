@@ -1,75 +1,182 @@
+// Файл: backend-core/src/main/java/myapp/backendcore/config/DataSeeder.java
 package myapp.backendcore.config;
 
-import myapp.backendcore.model.Challenge;
-import myapp.backendcore.model.ChallengeStatus;
-import myapp.backendcore.model.User;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import myapp.backendcore.model.*;
 import myapp.backendcore.repository.ChallengeRepository;
+import myapp.backendcore.repository.SubmissionRepository;
 import myapp.backendcore.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Set;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 @Configuration
+@RequiredArgsConstructor
+@Slf4j
 public class DataSeeder implements CommandLineRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final UserRepository userRepository;
     private final ChallengeRepository challengeRepository;
-
+    private final SubmissionRepository submissionRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    public DataSeeder(UserRepository userRepository, ChallengeRepository challengeRepository) {
-        this.userRepository = userRepository;
-        this.challengeRepository = challengeRepository;
-    }
 
     @Override
     public void run(String... args) {
+        log.info("🔄 DataSeeder: Re-seeding database...");
+        submissionRepository.deleteAll();
+        challengeRepository.deleteAll();
+        userRepository.deleteAll();
 
-        seedAdminUser();
-        seedChallenges();
+        List<User> users = seedUsers();
+        List<Challenge> challenges = seedChallenges();
+        seedSubmissions(users, challenges);
+
+        log.info("✅ DataSeeder completed.");
     }
 
-    private void seedAdminUser() {
-        if (userRepository.count() == 0) {
-            User admin = User.builder()
-                    .email("admin@hack.com")
-                    .passwordHash(passwordEncoder.encode("admin123"))
-                    .displayName("Admin User")
-                    .roles(Set.of("ROLE_USER", "ROLE_ADMIN"))
-                    .build();
+    private List<User> seedUsers() {
+        List<User> users = new ArrayList<>();
 
-            userRepository.save(admin);
-            log.info("🌱 Seeded Admin user: admin@hack.com / admin123");
+        // Admin (Main Demo User)
+        users.add(userRepository.save(User.builder()
+                .email("admin@hack.com").passwordHash(passwordEncoder.encode("admin123"))
+                .displayName("Admin Team").roles(Set.of("ROLE_USER", "ROLE_ADMIN")).build()));
+
+        // Other Teams
+        users.add(userRepository.save(User.builder().email("team1@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Quantum Solvers").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team2@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Neural Ninjas").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team3@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Data Miners").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team4@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Gradient Descenters").roles(Set.of("ROLE_USER")).build()));
+
+        return users;
+    }
+
+    private List<Challenge> seedChallenges() {
+        List<Challenge> challenges = new ArrayList<>();
+
+        // 1. Active Challenge
+        challenges.add(challengeRepository.save(Challenge.builder()
+                .title("Titanic Survival Prediction")
+                .description("Predict survival on the Titanic using passenger data. This is a classic binary classification problem. Optimize for Accuracy.")
+                .rules("1. No external data allowed.\n2. Max 5 submissions per day.\n3. Team merging is allowed until 1 week before deadline.")
+                .metric("Accuracy")
+                .status(ChallengeStatus.OPEN)
+                .deadline(Instant.now().plus(10, ChronoUnit.DAYS))
+                .dataAssets(List.of(new Challenge.DataAsset("train.csv", "56 KB"), new Challenge.DataAsset("test.csv", "28 KB"), new Challenge.DataAsset("sample_submission.csv", "2 KB")))
+                .createdAt(Instant.now().minus(5, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build()));
+
+        // 2. Active Challenge (Finance)
+        challenges.add(challengeRepository.save(Challenge.builder()
+                .title("Stock Market Volatility")
+                .description("Forecast the volatility of a set of major stocks over the next 10-minute window. High frequency data provided.")
+                .rules("Standard competition rules apply. RMSE is the evaluation metric.")
+                .metric("RMSE")
+                .status(ChallengeStatus.OPEN)
+                .deadline(Instant.now().plus(20, ChronoUnit.DAYS))
+                .dataAssets(List.of(new Challenge.DataAsset("market_data.parquet", "120 MB"), new Challenge.DataAsset("targets.csv", "5 MB")))
+                .createdAt(Instant.now().minus(2, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build()));
+
+        // 3. Closed Challenge
+        challenges.add(challengeRepository.save(Challenge.builder()
+                .title("House Price Regression")
+                .description("Predict sales prices and practice feature engineering, RFs, and gradient boosting.")
+                .rules("Competition is CLOSED.")
+                .metric("RMSE")
+                .status(ChallengeStatus.CLOSED)
+                .deadline(Instant.now().minus(2, ChronoUnit.DAYS)) // Deadline passed
+                .dataAssets(List.of(new Challenge.DataAsset("houses_train.csv", "400 KB")))
+                .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
+                .updatedAt(Instant.now().minus(2, ChronoUnit.DAYS))
+                .build()));
+
+        // 4. Active Challenge (NLP)
+        challenges.add(challengeRepository.save(Challenge.builder()
+                .title("Sentiment Analysis on Tweets")
+                .description("Classify tweets into positive, negative, or neutral sentiment.")
+                .rules("Use of pre-trained models like BERT is allowed.")
+                .metric("F1-Score")
+                .status(ChallengeStatus.OPEN)
+                .deadline(Instant.now().plus(5, ChronoUnit.DAYS))
+                .dataAssets(List.of(new Challenge.DataAsset("tweets.jsonl", "45 MB")))
+                .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build()));
+
+        // 5. Future/Draft Challenge (technically Open for now)
+        challenges.add(challengeRepository.save(Challenge.builder()
+                .title("Image Classification: Wildfire Detection")
+                .description("Detect wildfires from satellite imagery.")
+                .rules("TBD")
+                .metric("ROC-AUC")
+                .status(ChallengeStatus.OPEN)
+                .deadline(Instant.now().plus(45, ChronoUnit.DAYS))
+                .dataAssets(List.of(new Challenge.DataAsset("images.zip", "1.2 GB")))
+                .createdAt(Instant.now().minus(1, ChronoUnit.DAYS))
+                .updatedAt(Instant.now())
+                .build()));
+
+        return challenges;
+    }
+
+    private void seedSubmissions(List<User> users, List<Challenge> challenges) {
+        Random rand = new Random();
+        User admin = users.get(0); // We will login as this user to check "My Submissions"
+
+        for (Challenge c : challenges) {
+            // Generate submissions for Admin (so we can see them in UI)
+            int adminSubs = rand.nextInt(3) + 2; // 2 to 4 submissions
+            for (int i = 0; i < adminSubs; i++) {
+                createSubmission(admin, c, rand);
+            }
+
+            // Generate submissions for other users (for Leaderboard)
+            for (int i = 1; i < users.size(); i++) {
+                if (rand.nextBoolean()) { // Not every team submits to every challenge
+                    int count = rand.nextInt(3) + 1;
+                    for (int j = 0; j < count; j++) {
+                        createSubmission(users.get(i), c, rand);
+                    }
+                }
+            }
         }
     }
 
-    private void seedChallenges() {
-        if (challengeRepository.count() == 0) {
+    private void createSubmission(User user, Challenge c, Random rand) {
+        SubmissionStatus status = SubmissionStatus.DONE;
+        Double score = 0.5 + (rand.nextDouble() * 0.45); // 0.50 to 0.95
 
-            Challenge c1 = Challenge.builder()
-                    .title("Titanic Survival Prediction")
-                    .description("Predict if a passenger survived based on Titanic dataset")
-                    .status(ChallengeStatus.OPEN)     // ✅ ENUM
-                    .metric("accuracy")
-                    .build();
-
-            Challenge c2 = Challenge.builder()
-                    .title("House Price Regression")
-                    .description("Predict home prices using regression techniques")
-                    .status(ChallengeStatus.OPEN)    // ✅ ENUM
-                    .metric("rmse")
-                    .build();
-
-            challengeRepository.save(c1);
-            challengeRepository.save(c2);
-
-            log.info("🌱 Seeded demo challenges");
+        // Simulate some processing or failed
+        if (c.getStatus() == ChallengeStatus.OPEN && rand.nextInt(10) > 8) {
+            status = SubmissionStatus.FAILED;
+            score = null;
         }
+
+        Submission s = Submission.builder()
+                .userId(user.getId())
+                .challengeId(c.getId())
+                .filename("sub_" + UUID.randomUUID().toString().substring(0, 8) + ".csv")
+                .originalFilename("solution.csv")
+                .fileSize(1024 + rand.nextInt(10000))
+                .status(status)
+                .score(score)
+                .submissionHash(UUID.randomUUID().toString()) // fake hash
+                .createdAt(c.getCreatedAt().plus(rand.nextInt(48), ChronoUnit.HOURS)) // Random time after creation
+                .updatedAt(Instant.now())
+                .build();
+
+        if (status == SubmissionStatus.FAILED) {
+            s.setErrorMessage("Column 'prediction' not found.");
+        }
+
+        submissionRepository.save(s);
     }
 }

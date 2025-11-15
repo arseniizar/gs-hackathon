@@ -1,8 +1,11 @@
+// Файл: backend-core/src/main/java/myapp/backendcore/dto/ChallengeResponse.java
 package myapp.backendcore.dto;
 
+import myapp.backendcore.model.Challenge; // Import inner class
 import myapp.backendcore.model.ChallengeStatus;
 
 import java.time.Instant;
+import java.util.List;
 
 public class ChallengeResponse {
     private String id;
@@ -10,6 +13,9 @@ public class ChallengeResponse {
     private String description;
     private ChallengeStatus status;
     private String metric;
+    private Instant deadline;
+    private String rules; // 👈
+    private List<Challenge.DataAsset> dataAssets; // 👈
     private Instant createdAt;
     private Instant updatedAt;
 

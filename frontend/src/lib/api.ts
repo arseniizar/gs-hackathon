@@ -48,6 +48,18 @@ export const getChallengeDetails = async (challengeId: string) => {
 };
 
 
+// --- LEADERBOARD ---
+export const getLeaderboardForChallenge = async (challengeId: string) => {
+    const response = await apiClient.get(`/challenges/${challengeId}/leaderboard`);
+    return response.data;
+};
+
+export const getMySubmissions = async (challengeId: string) => {
+    const response = await apiClient.get(`/submissions/my?challengeId=${challengeId}`);
+    return response.data;
+};
+
+
 // --- ADMIN: CHALLENGE MANAGEMENT ---
 export const adminGetAllChallenges = async () => {
     const response = await apiClient.get('/admin/challenges');
