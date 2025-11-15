@@ -1,6 +1,5 @@
 package myapp.backendcore.config;
 
-import lombok.RequiredArgsConstructor;
 import myapp.backendcore.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,49 +16,33 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(cors -> {})   // ⭐ REQUIRED
+                .cors(cors -> {})
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sess ->
-                        sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
-                        // Allow OPTIONS requests (CORS preflight)
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // Authentication endpoints
+                        // Дозволяємо Swagger UI
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        // Дозволяємо всі запити до /api/auth/**
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // Public challenge GET requests
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/challenges",
-                                "/api/challenges/**"
-                        ).permitAll()
-
-                        // Swagger docs public
-                        .requestMatchers("/v3/api-docs/**",
-                                "/swagger-ui.html",
-                                "/swagger-ui/**"
-                        ).permitAll()
-
-                        // Admin-only area
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // Worker
-                        .requestMatchers("/api/internal/**").hasRole("ADMIN")
-
-                        // Everything else requires JWT
-                        .anyRequest().authenticated()
+                        // Дозволяємо GET запити до челенджів
+                        .requestMatchers(HttpMethod.GET, "/api/challenges", "/api/challenges/**").permitAll()
+                        // Всі інші запити до /api/** потребують аутентифікації
+                        .requestMatchers("/api/**").authenticated()
+                        // Всі інші запити (не /api) дозволені (наприклад, для React Router)
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
