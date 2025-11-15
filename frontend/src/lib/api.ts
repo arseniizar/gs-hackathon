@@ -79,3 +79,14 @@ export const adminUpdateChallenge = async (id: string, challengeData: object) =>
 export const adminDeleteChallenge = async (id: string) => {
     await apiClient.delete(`/admin/challenges/${id}`);
 };
+
+
+// --- ADMIN: USER MANAGEMENT ---
+export const adminGetAllUsers = async () => {
+    const response = await apiClient.get('/admin/users');
+    return response.data;
+};
+
+export const adminDeleteUser = async (id: string) => {
+    await apiClient.delete(`/admin/users/${id}`);
+};

@@ -1,6 +1,5 @@
 package myapp.backendcore.controller;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import myapp.backendcore.model.User;
 import myapp.backendcore.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
