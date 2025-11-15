@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Upload, ArrowLeft } from 'lucide-react';
 import { SubmissionDialog } from '@/components/SubmissionDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Toaster } from "@/components/ui/toaster";
 import { getChallengeDetails, getLeaderboardForChallenge, getMySubmissions } from '@/lib/api';
 import { ROUTES } from '@/router/paths';
 import {
@@ -17,7 +18,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-// Інтерфейси відповідають даним з бекенду
+// Інтерфейси для даних з бекенду
 interface DataAsset {
     name: string;
     size: string;
@@ -335,8 +336,13 @@ function ChallengeDetailsPage() {
             <SubmissionDialog
                 open={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
+                challengeId={challenge.id}
                 challengeTitle={challenge.title}
+                onSubmissionSuccess={() => {
+                    fetchMySubmissions();
+                }}
             />
+            <Toaster />
         </>
     );
 }
