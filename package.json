@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install:all": "cd frontend && npm install",
-    "start": "concurrently --kill-others-on-fail -n \"DB,API,WEB\" -c \"bgBlue.bold,bgMagenta.bold,bgGreen.bold\" \"npm:start:db\" \"npm:start:api\" \"npm:start:web\"",
+    "install:all": "cd frontend && npm install && cd ../backend-worker && npm install",
+    "start": "concurrently --kill-others-on-fail -n \"DB,API,WEB,WORKER\" -c \"bgBlue.bold,bgMagenta.bold,bgGreen.bold,bgCyan.bold\" \"npm:start:db\" \"npm:start:api\" \"npm:start:web\" \"npm:start:worker\"",
     "start:db": "docker-compose -f backend-core/docker-compose.yml up",
     "start:api": "cd backend-core && ./mvnw spring-boot:run",
-    "start:web": "cd frontend && npm run dev"
+    "start:web": "cd frontend && npm run dev",
+    "start:worker": "cd backend-worker && npm start"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

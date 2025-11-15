@@ -17,7 +17,6 @@ import java.util.*;
 @Configuration
 public class DataSeeder implements CommandLineRunner {
 
-    // 👇 ДОДАНО: Створюємо логер вручну
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final UserRepository userRepository;
@@ -25,7 +24,6 @@ public class DataSeeder implements CommandLineRunner {
     private final SubmissionRepository submissionRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // 👇 ДОДАНО: Явний конструктор для ін'єкції залежностей
     public DataSeeder(UserRepository userRepository,
                       ChallengeRepository challengeRepository,
                       SubmissionRepository submissionRepository) {
@@ -51,16 +49,14 @@ public class DataSeeder implements CommandLineRunner {
     private List<User> seedUsers() {
         List<User> users = new ArrayList<>();
 
-        // Admin (Main Demo User)
         users.add(userRepository.save(User.builder()
                 .email("admin@hack.com").passwordHash(passwordEncoder.encode("admin123"))
-                .displayName("Admin Team").roles(Set.of("ROLE_USER", "ROLE_ADMIN")).build()));
+                .teamName("Admin Team").roles(Set.of("ROLE_USER", "ROLE_ADMIN")).build()));
 
-        // Other Teams
-        users.add(userRepository.save(User.builder().email("team1@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Quantum Solvers").roles(Set.of("ROLE_USER")).build()));
-        users.add(userRepository.save(User.builder().email("team2@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Neural Ninjas").roles(Set.of("ROLE_USER")).build()));
-        users.add(userRepository.save(User.builder().email("team3@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Data Miners").roles(Set.of("ROLE_USER")).build()));
-        users.add(userRepository.save(User.builder().email("team4@hack.com").passwordHash(passwordEncoder.encode("123456")).displayName("Gradient Descenters").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team1@hack.com").passwordHash(passwordEncoder.encode("123456")).teamName("Quantum Solvers").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team2@hack.com").passwordHash(passwordEncoder.encode("123456")).teamName("Neural Ninjas").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team3@hack.com").passwordHash(passwordEncoder.encode("123456")).teamName("Data Miners").roles(Set.of("ROLE_USER")).build()));
+        users.add(userRepository.save(User.builder().email("team4@hack.com").passwordHash(passwordEncoder.encode("123456")).teamName("Gradient Descenters").roles(Set.of("ROLE_USER")).build()));
 
         return users;
     }
@@ -68,7 +64,6 @@ public class DataSeeder implements CommandLineRunner {
     private List<Challenge> seedChallenges() {
         List<Challenge> challenges = new ArrayList<>();
 
-        // 1. Active Challenge
         challenges.add(challengeRepository.save(Challenge.builder()
                 .title("Titanic Survival Prediction")
                 .description("Predict survival on the Titanic using passenger data. This is a classic binary classification problem. Optimize for Accuracy.")
@@ -81,7 +76,6 @@ public class DataSeeder implements CommandLineRunner {
                 .updatedAt(Instant.now())
                 .build()));
 
-        // 2. Active Challenge (Finance)
         challenges.add(challengeRepository.save(Challenge.builder()
                 .title("Stock Market Volatility")
                 .description("Forecast the volatility of a set of major stocks over the next 10-minute window. High frequency data provided.")
@@ -94,20 +88,18 @@ public class DataSeeder implements CommandLineRunner {
                 .updatedAt(Instant.now())
                 .build()));
 
-        // 3. Closed Challenge
         challenges.add(challengeRepository.save(Challenge.builder()
                 .title("House Price Regression")
                 .description("Predict sales prices and practice feature engineering, RFs, and gradient boosting.")
                 .rules("Competition is CLOSED.")
                 .metric("RMSE")
                 .status(ChallengeStatus.CLOSED)
-                .deadline(Instant.now().minus(2, ChronoUnit.DAYS)) // Deadline passed
+                .deadline(Instant.now().minus(2, ChronoUnit.DAYS))
                 .dataAssets(List.of(new Challenge.DataAsset("houses_train.csv", "400 KB")))
                 .createdAt(Instant.now().minus(30, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(2, ChronoUnit.DAYS))
                 .build()));
 
-        // 4. Active Challenge (NLP)
         challenges.add(challengeRepository.save(Challenge.builder()
                 .title("Sentiment Analysis on Tweets")
                 .description("Classify tweets into positive, negative, or neutral sentiment.")
@@ -120,7 +112,6 @@ public class DataSeeder implements CommandLineRunner {
                 .updatedAt(Instant.now())
                 .build()));
 
-        // 5. Future/Draft Challenge (technically Open for now)
         challenges.add(challengeRepository.save(Challenge.builder()
                 .title("Image Classification: Wildfire Detection")
                 .description("Detect wildfires from satellite imagery.")
@@ -138,18 +129,14 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedSubmissions(List<User> users, List<Challenge> challenges) {
         Random rand = new Random();
-        User admin = users.get(0); // We will login as this user to check "My Submissions"
-
+        User admin = users.get(0);
         for (Challenge c : challenges) {
-            // Generate submissions for Admin (so we can see them in UI)
-            int adminSubs = rand.nextInt(3) + 2; // 2 to 4 submissions
+            int adminSubs = rand.nextInt(3) + 2;
             for (int i = 0; i < adminSubs; i++) {
                 createSubmission(admin, c, rand);
             }
-
-            // Generate submissions for other users (for Leaderboard)
             for (int i = 1; i < users.size(); i++) {
-                if (rand.nextBoolean()) { // Not every team submits to every challenge
+                if (rand.nextBoolean()) {
                     int count = rand.nextInt(3) + 1;
                     for (int j = 0; j < count; j++) {
                         createSubmission(users.get(i), c, rand);
@@ -161,14 +148,11 @@ public class DataSeeder implements CommandLineRunner {
 
     private void createSubmission(User user, Challenge c, Random rand) {
         SubmissionStatus status = SubmissionStatus.DONE;
-        Double score = 0.5 + (rand.nextDouble() * 0.45); // 0.50 to 0.95
-
-        // Simulate some processing or failed
+        Double score = 0.5 + (rand.nextDouble() * 0.45);
         if (c.getStatus() == ChallengeStatus.OPEN && rand.nextInt(10) > 8) {
             status = SubmissionStatus.FAILED;
             score = null;
         }
-
         Submission s = Submission.builder()
                 .userId(user.getId())
                 .challengeId(c.getId())
@@ -177,15 +161,13 @@ public class DataSeeder implements CommandLineRunner {
                 .fileSize(1024 + rand.nextInt(10000))
                 .status(status)
                 .score(score)
-                .submissionHash(UUID.randomUUID().toString()) // fake hash
-                .createdAt(c.getCreatedAt().plus(rand.nextInt(48), ChronoUnit.HOURS)) // Random time after creation
+                .submissionHash(UUID.randomUUID().toString())
+                .createdAt(c.getCreatedAt().plus(rand.nextInt(48), ChronoUnit.HOURS))
                 .updatedAt(Instant.now())
                 .build();
-
         if (status == SubmissionStatus.FAILED) {
             s.setErrorMessage("Column 'prediction' not found.");
         }
-
         submissionRepository.save(s);
     }
 }
