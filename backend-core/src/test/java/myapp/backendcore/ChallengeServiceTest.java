@@ -2,7 +2,7 @@ package myapp.backendcore;
 
 import myapp.backendcore.dto.ChallengeCreateRequest;
 import myapp.backendcore.dto.ChallengeResponse;
-import myapp.backendcore.dto.ChallengeUpdateRequest;
+import myapp.backendcore.dto.ChallengeSaveRequest;
 import myapp.backendcore.exception.ResourceNotFoundException;
 import myapp.backendcore.model.Challenge;
 import myapp.backendcore.model.ChallengeStatus;
@@ -40,7 +40,7 @@ class ChallengeServiceTest {
     @Test
     void create_shouldSaveChallengeWithDefaultOpenStatus() {
         // given
-        ChallengeCreateRequest request = new ChallengeCreateRequest();
+        ChallengeSaveRequest request = new ChallengeSaveRequest();
         request.setTitle("Test Challenge");
         request.setDescription("Description");
         request.setMetric("accuracy");
@@ -90,7 +90,7 @@ class ChallengeServiceTest {
 
         when(challengeRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        ChallengeUpdateRequest request = new ChallengeUpdateRequest();
+        ChallengeSaveRequest request = new ChallengeSaveRequest();
         request.setTitle("New title");
         request.setDescription("New desc");
         request.setMetric("rmse");
