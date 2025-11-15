@@ -12,6 +12,7 @@ import ProtectedRoute from './ProtectedRoute';
 import PublicOnlyRoute from './PublicOnlyRoute'; // 👈 Імпортуємо новий компонент
 import AdminRoute from './AdminRoute';
 import { ROUTES } from './paths';
+import SubmissionDetailsPage from "@/pages/SubmissionDetailsPage.tsx";
 
 const routes: RouteObject[] = [
     {
@@ -35,6 +36,7 @@ const routes: RouteObject[] = [
                 children: [
                     { path: ROUTES.TEAM_PROFILE, element: <TeamProfilePage /> },
                     { path: ROUTES.CHALLENGE_DETAILS(':challengeId'), element: <ChallengeDetailsPage /> },
+                    { path: ROUTES.SUBMISSION_DETAILS(':submissionId'), element: <SubmissionDetailsPage /> },
                 ],
             },
 

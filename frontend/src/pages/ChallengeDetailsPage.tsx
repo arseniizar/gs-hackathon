@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,6 +101,40 @@ function ChallengeDetailsPage() {
     const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
     const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
 
+    const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const fetchMySubmissions = async () => {
+        if (!challengeId) return;
+        try {
+            const data = await getMySubmissions(challengeId);
+            setUserSubmissions(data);
+
+            const stillProcessing = data.some(
+                (sub: UserSubmission) => sub.status === 'PENDING' || sub.status === 'PROCESSING'
+            );
+
+            if (!stillProcessing && pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+                pollingIntervalRef.current = null;
+                console.log("Polling stopped: all submissions are finalized.");
+            }
+        } catch (error) {
+            console.error("Failed to fetch user submissions", error);
+        }
+    };
+
+    const startPollingForSubmissions = () => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+        }
+
+        console.log("Polling started for submission status...");
+        pollingIntervalRef.current = setInterval(() => {
+            console.log("Polling...");
+            fetchMySubmissions();
+        }, 3000); // Опитування кожні 3 секунди
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             if (!challengeId) {
@@ -121,6 +155,13 @@ function ChallengeDetailsPage() {
             }
         };
         fetchData();
+
+        // Очищення інтервалу при розмонтуванні компонента
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+            }
+        };
     }, [challengeId]);
 
     const fetchLeaderboard = async () => {
@@ -133,16 +174,6 @@ function ChallengeDetailsPage() {
             setLeaderboardError("Could not load the leaderboard.");
         } finally {
             setIsLeaderboardLoading(false);
-        }
-    };
-
-    const fetchMySubmissions = async () => {
-        if (!challengeId) return;
-        try {
-            const data = await getMySubmissions(challengeId);
-            setUserSubmissions(data);
-        } catch (error) {
-            console.error("Failed to load submissions", error);
         }
     };
 
@@ -301,7 +332,10 @@ function ChallengeDetailsPage() {
                                     userSubmissions.map(sub => (
                                         <TableRow key={sub.id}>
                                             <TableCell>
-                                                <div className="font-mono text-sm font-medium">{sub.filename}</div>
+                                                {/* 👇 ЗМІНА: Робимо назву файлу посиланням */}
+                                                <Link to={ROUTES.SUBMISSION_DETAILS(sub.id)} className="font-mono text-sm font-medium hover:underline">
+                                                    {sub.filename}
+                                                </Link>
                                                 <div className="text-sm text-muted-foreground">
                                                     {new Date(sub.createdAt || sub.submittedAt).toLocaleString()}
                                                 </div>
@@ -340,6 +374,7 @@ function ChallengeDetailsPage() {
                 challengeTitle={challenge.title}
                 onSubmissionSuccess={() => {
                     fetchMySubmissions();
+                    startPollingForSubmissions();
                 }}
             />
             <Toaster />

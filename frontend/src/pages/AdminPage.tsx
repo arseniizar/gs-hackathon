@@ -8,11 +8,14 @@ import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { adminGetAllChallenges, adminDeleteChallenge, adminGetAllUsers, adminDeleteUser } from '@/lib/api';
 import { ROUTES } from '@/router/paths';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
-// --- Компонент AdminChallengesList (без змін) ---
+// --- Компонент для вкладки "Challenges" ---
 function AdminChallengesList() {
     const [challenges, setChallenges] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
     const fetchChallenges = async () => {
         setIsLoading(true);
@@ -30,13 +33,21 @@ function AdminChallengesList() {
         fetchChallenges();
     }, []);
 
-    const handleDelete = async (id: string) => {
-        if (window.confirm('Are you sure you want to permanently delete this challenge?')) {
+    const handleDeleteClick = (id: string) => {
+        setItemToDelete(id);
+        setDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (itemToDelete) {
             try {
-                await adminDeleteChallenge(id);
-                fetchChallenges();
+                await adminDeleteChallenge(itemToDelete);
+                await fetchChallenges();
             } catch (error) {
                 console.error("Failed to delete challenge:", error);
+            } finally {
+                setItemToDelete(null);
+                setDialogOpen(false);
             }
         }
     };
@@ -72,7 +83,7 @@ function AdminChallengesList() {
                                         <Button variant="ghost" size="icon" asChild>
                                             <Link to={ROUTES.ADMIN_CHALLENGE_EDIT(c.id)} title="Edit Challenge"><Edit className="h-4 w-4" /></Link>
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(c.id)} title="Delete Challenge">
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(c.id)} title="Delete Challenge">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
@@ -82,14 +93,23 @@ function AdminChallengesList() {
                     </Table>
                 )}
             </div>
+            <ConfirmDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onConfirm={confirmDelete}
+                title="Are you sure you want to delete this challenge?"
+                description="This action cannot be undone and will permanently remove the challenge."
+            />
         </div>
     );
 }
 
-// --- Компонент для вкладки "Users" (ЗІ ЗМІНАМИ) ---
+// --- Компонент для вкладки "Users" ---
 function AdminUsersList() {
     const [users, setUsers] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
     const fetchUsers = async () => {
         setIsLoading(true);
@@ -107,13 +127,21 @@ function AdminUsersList() {
         fetchUsers();
     }, []);
 
-    const handleDelete = async (id: string) => {
-        if (window.confirm('Are you sure you want to delete this user? This action is irreversible.')) {
+    const handleDeleteClick = (id: string) => {
+        setItemToDelete(id);
+        setDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (itemToDelete) {
             try {
-                await adminDeleteUser(id);
-                fetchUsers();
+                await adminDeleteUser(itemToDelete);
+                await fetchUsers();
             } catch (error) {
                 console.error("Failed to delete user:", error);
+            } finally {
+                setItemToDelete(null);
+                setDialogOpen(false);
             }
         }
     };
@@ -128,7 +156,6 @@ function AdminUsersList() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                {/* 👇 ЗМІНА: "Display Name" -> "Team Name" */}
                                 <TableHead>Team Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Roles</TableHead>
@@ -138,7 +165,6 @@ function AdminUsersList() {
                         <TableBody>
                             {users.map((u) => (
                                 <TableRow key={u.id}>
-                                    {/* 👇 ЗМІНА: u.displayName -> u.teamName */}
                                     <TableCell className="font-medium">{u.teamName || <span className="text-muted-foreground italic">Not set</span>}</TableCell>
                                     <TableCell>{u.email}</TableCell>
                                     <TableCell>
@@ -149,7 +175,7 @@ function AdminUsersList() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(u.id)} title="Delete User">
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(u.id)} title="Delete User">
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
@@ -159,12 +185,19 @@ function AdminUsersList() {
                     </Table>
                 )}
             </div>
+            <ConfirmDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                onConfirm={confirmDelete}
+                title="Are you sure you want to delete this user?"
+                description="This will permanently delete the user and all their related data. This action is irreversible."
+            />
         </div>
     );
 }
 
 
-// --- Головна сторінка-контейнер (без змін) ---
+// --- Головна сторінка-контейнер ---
 function AdminPage() {
     const navigate = useNavigate();
     const location = useLocation();
