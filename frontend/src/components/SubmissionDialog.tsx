@@ -7,6 +7,15 @@ import { UploadCloud, File as FileIcon, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { cn } from '@/lib/utils';
 
+const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const size = parseFloat((bytes / Math.pow(k, i)).toFixed(2));
+    return `${size} ${sizes[i]}`;
+};
+
 interface SubmissionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -111,7 +120,8 @@ export function SubmissionDialog({ open, onOpenChange, challengeId, challengeTit
                                 <div className="flex flex-col overflow-hidden">
                                     <span className="text-sm font-medium truncate">{file.name}</span>
                                     <span className="text-xs text-muted-foreground">
-                                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                                        {/* 👇 Використовуємо нову функцію */}
+                                        {formatFileSize(file.size)}
                                     </span>
                                 </div>
                             </div>
