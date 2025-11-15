@@ -1,15 +1,18 @@
 package myapp.backendcore.controller;
 
-import myapp.backendcore.dto.SubmissionResultDto;
 import myapp.backendcore.model.Submission;
+import myapp.backendcore.model.User;
 import myapp.backendcore.repository.SubmissionRepository;
 import myapp.backendcore.repository.UserRepository;
 import myapp.backendcore.service.SubmissionService;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Comparator;
 import java.util.List;
 
 @RestController
@@ -20,9 +23,11 @@ public class SubmissionController {
     private final UserRepository userRepository;
     private final SubmissionRepository submissionRepository;
 
-    public SubmissionController(SubmissionService submissionService, UserRepository userRepository) {
+    // Явний конструктор замість Lombok
+    public SubmissionController(SubmissionService submissionService, UserRepository userRepository, SubmissionRepository submissionRepository) {
         this.submissionService = submissionService;
         this.userRepository = userRepository;
+        this.submissionRepository = submissionRepository;
     }
 
     @PostMapping(value = "/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -33,8 +38,8 @@ public class SubmissionController {
     ) {
         try {
             String userEmail = authentication.getName();
-
-            var user = userRepository.findByEmail(userEmail).orElseThrow();
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             Submission submission = submissionService.createSubmission(
                     user.getId(),
@@ -51,7 +56,7 @@ public class SubmissionController {
         } catch (Exception ex) {
             ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Unexpected error");
+                    .body("Unexpected error during submission");
         }
     }
 
@@ -61,48 +66,13 @@ public class SubmissionController {
             Authentication authentication
     ) {
         String userEmail = authentication.getName();
-        var user = userRepository.findByEmail(userEmail).orElseThrow();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Submission> subs = submissionRepository.findByUserIdAndChallengeId(user.getId(), challengeId);
         // Сортуємо: новіші зверху
-        subs.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        subs.sort(Comparator.comparing(Submission::getCreatedAt).reversed());
 
         return ResponseEntity.ok(subs);
-    }
-}
-    @GetMapping("/submission/{id}/file")
-    public ResponseEntity<?> getSubmissionFile(@PathVariable("id") String submissionId) {
-        try {
-            var fileResource = submissionService.getSubmissionFile(submissionId);
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResource.getFilename() + "\"")
-                    .body(fileResource);
-
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Unexpected error");
-        }
-    }
-
-    @PostMapping("/submission/{id}/score")
-    public ResponseEntity<?> scoreSubmission(@PathVariable("id") String submissionId) {
-        try {
-            double score = submissionService.evaluateSubmission(submissionId);
-
-            return ResponseEntity.ok()
-                    .body("Submission scored successfully. Score: " + score);
-
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Unexpected error occurred while scoring the submission");
-        }
     }
 }

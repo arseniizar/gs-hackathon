@@ -1,7 +1,7 @@
 package myapp.backendcore.controller;
 
-import myapp.backendcore.model.Challenge;
-import myapp.backendcore.repository.ChallengeRepository;
+import myapp.backendcore.service.ChallengeService;
+import myapp.backendcore.dto.ChallengeResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,23 +11,19 @@ import java.util.List;
 @RequestMapping("/api/challenges")
 public class ChallengeController {
 
-    private final ChallengeRepository challengeRepository;
+    private final ChallengeService challengeService;
 
-    public ChallengeController(ChallengeRepository challengeRepository) {
-        this.challengeRepository = challengeRepository;
+    public ChallengeController(ChallengeService challengeService) {
+        this.challengeService = challengeService;
     }
 
-    // GET /api/challenges → list all challenges
     @GetMapping
-    public ResponseEntity<List<Challenge>> getAllChallenges() {
-        return ResponseEntity.ok(challengeRepository.findAll());
+    public ResponseEntity<List<ChallengeResponse>> getAllChallenges() {
+        return ResponseEntity.ok(challengeService.getAll());
     }
 
-    // GET /api/challenges/{id} → get challenge by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Challenge> getChallengeById(@PathVariable String id) {
-        return challengeRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ChallengeResponse> getChallengeById(@PathVariable String id) {
+        return ResponseEntity.ok(challengeService.getById(id));
     }
 }

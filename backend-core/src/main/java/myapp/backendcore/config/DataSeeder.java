@@ -1,12 +1,11 @@
-// Файл: backend-core/src/main/java/myapp/backendcore/config/DataSeeder.java
 package myapp.backendcore.config;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import myapp.backendcore.model.*;
 import myapp.backendcore.repository.ChallengeRepository;
 import myapp.backendcore.repository.SubmissionRepository;
 import myapp.backendcore.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -16,14 +15,24 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Configuration
-@RequiredArgsConstructor
-@Slf4j
 public class DataSeeder implements CommandLineRunner {
+
+    // 👇 ДОДАНО: Створюємо логер вручну
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
     private final UserRepository userRepository;
     private final ChallengeRepository challengeRepository;
     private final SubmissionRepository submissionRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // 👇 ДОДАНО: Явний конструктор для ін'єкції залежностей
+    public DataSeeder(UserRepository userRepository,
+                      ChallengeRepository challengeRepository,
+                      SubmissionRepository submissionRepository) {
+        this.userRepository = userRepository;
+        this.challengeRepository = challengeRepository;
+        this.submissionRepository = submissionRepository;
+    }
 
     @Override
     public void run(String... args) {
