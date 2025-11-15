@@ -8,13 +8,32 @@ import { adminCreateChallenge, adminUpdateChallenge, getChallengeDetails } from 
 import { ROUTES } from '@/router/paths';
 import { ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { cn } from '@/lib/utils';
+import * as React from "react";
 
-const Textarea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-    <textarea
-        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        {...props}
-    />
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+    ({ className, ...props }, ref) => {
+        return (
+            <textarea
+                className={cn(
+                    "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "disabled:cursor-not-allowed disabled:opacity-50",
+                    className
+                )}
+                ref={ref}
+                {...props}
+            />
+        );
+    }
 );
+Textarea.displayName = "Textarea";
+
+type ValidationErrors = {
+    title?: string;
+    description?: string;
+    metric?: string;
+};
 
 function AdminChallengeEditPage() {
     const { challengeId } = useParams<{ challengeId: string }>();
@@ -29,9 +48,11 @@ function AdminChallengeEditPage() {
         rules: '',
         deadline: '',
     });
+
     const [isLoading, setIsLoading] = useState(isEditing);
     const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [generalError, setGeneralError] = useState<string | null>(null);
+    const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
     useEffect(() => {
         if (isEditing && challengeId) {
@@ -54,13 +75,19 @@ function AdminChallengeEditPage() {
     }, [challengeId, isEditing]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        setFormState({ ...formState, [e.target.id]: e.target.value });
+        const { id, value } = e.target;
+        setFormState(prev => ({ ...prev, [id]: value }));
+        if (validationErrors[id as keyof ValidationErrors]) {
+            setValidationErrors(prev => ({ ...prev, [id]: undefined }));
+        }
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
-        setError(null);
+        setGeneralError(null);
+        setValidationErrors({});
+
         try {
             const dataToSave = {
                 ...formState,
@@ -75,7 +102,13 @@ function AdminChallengeEditPage() {
             navigate(ROUTES.ADMIN);
         } catch (err: any) {
             console.error("Failed to save challenge", err);
-            setError(err.response?.data?.message || "An unexpected error occurred. Please try again.");
+            const errorResponse = err.response;
+
+            if (errorResponse && errorResponse.status === 400 && errorResponse.data.messages) {
+                setValidationErrors(errorResponse.data.messages);
+            } else {
+                setGeneralError(errorResponse?.data?.message || "An unexpected error occurred. Please try again.");
+            }
         } finally {
             setIsSaving(false);
         }
@@ -106,11 +139,28 @@ function AdminChallengeEditPage() {
                 <form onSubmit={handleSave} className="space-y-6">
                     <div className="grid gap-2">
                         <Label htmlFor="title">Title</Label>
-                        <Input id="title" value={formState.title} onChange={handleChange} required placeholder="e.g., Customer Churn Prediction" />
+                        <Input
+                            id="title"
+                            value={formState.title}
+                            onChange={handleChange}
+                            required
+                            placeholder="e.g., Customer Churn Prediction"
+                            className={cn(validationErrors.title && "border-destructive")}
+                        />
+                        {validationErrors.title && <p className="text-sm text-destructive mt-1">{validationErrors.title}</p>}
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="description">Description (Markdown supported)</Label>
-                        <Textarea id="description" value={formState.description} onChange={handleChange} required rows={6} placeholder="Detailed problem statement..." />
+                        <Textarea
+                            id="description"
+                            value={formState.description}
+                            onChange={handleChange}
+                            required
+                            rows={6}
+                            placeholder="Detailed problem statement..."
+                            className={cn(validationErrors.description && "border-destructive")}
+                        />
+                        {validationErrors.description && <p className="text-sm text-destructive mt-1">{validationErrors.description}</p>}
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="rules">Rules</Label>
@@ -119,7 +169,15 @@ function AdminChallengeEditPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="grid gap-2">
                             <Label htmlFor="metric">Metric</Label>
-                            <Input id="metric" value={formState.metric} onChange={handleChange} required placeholder="e.g., ROC-AUC" />
+                            <Input
+                                id="metric"
+                                value={formState.metric}
+                                onChange={handleChange}
+                                required
+                                placeholder="e.g., ROC-AUC"
+                                className={cn(validationErrors.metric && "border-destructive")}
+                            />
+                            {validationErrors.metric && <p className="text-sm text-destructive mt-1">{validationErrors.metric}</p>}
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="status">Status</Label>
@@ -140,16 +198,16 @@ function AdminChallengeEditPage() {
                 </form>
             </div>
 
-            <Dialog open={!!error} onOpenChange={() => setError(null)}>
+            <Dialog open={!!generalError} onOpenChange={() => setGeneralError(null)}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="text-destructive">Save Failed</DialogTitle>
                         <DialogDescription>
-                            {error}
+                            {generalError}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end pt-2">
-                        <Button variant="outline" onClick={() => setError(null)}>Close</Button>
+                        <Button variant="outline" onClick={() => setGeneralError(null)}>Close</Button>
                     </div>
                 </DialogContent>
             </Dialog>
