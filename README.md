@@ -183,5 +183,3 @@ For production builds, run `cd frontend && npm run build` and `cd backend-core &
 - **Duplicate submission message**: The API hashes each CSV. Change the file contents before re-uploading.
 - **API fails to start because of Java version**: Install a JDK that matches `<java.version>` or lower the property to your installed version.
 - **Mongo container keeps restarting**: Make sure Docker Desktop is running and that port `27017` is free.
-
-Happy hacking!
