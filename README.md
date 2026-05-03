@@ -1,7 +1,6 @@
-# Hackathon Competition Platform
-
 <img width="1470" height="836" alt="Screenshot 2026-05-03 at 13 19 56" src="https://github.com/user-attachments/assets/88f344b1-8ce1-4148-9028-8cb4321ef0bc" />
 
+# Hackathon Competition Platform
 
 A three-service monorepo that powers data-science challenges with a Vite + React web app, a Spring Boot API backed by MongoDB, and a Node.js worker that scores CSV submissions. Everything needed to demo or host a local hackathon lives here.
 
