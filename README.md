@@ -2,7 +2,7 @@
 
 # Hackathon ML Competition Platform
 
-> **Goldman Sachs Warsaw Hackathon — 3rd Place Winner**  
+> **Goldman Sachs Warsaw Hackathon - 3rd Place Winner**  
 > A three-service monorepo for hosting data-science competitions with automated CSV prediction scoring and real-time leaderboards.
 
 ---
